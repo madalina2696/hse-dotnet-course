@@ -1,0 +1,15 @@
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/TheMiddleman
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/TheMiddleman.deps.json
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/TheMiddleman.runtimeconfig.json
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/TheMiddleman.dll
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/TheMiddleman.pdb
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.csproj.AssemblyReference.cache
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.AssemblyInfoInputs.cache
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.AssemblyInfo.cs
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.csproj.CoreCompileInputs.cache
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.dll
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/refint/TheMiddleman.dll
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.pdb
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.genruntimeconfig.cache
+/workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/ref/TheMiddleman.dll
