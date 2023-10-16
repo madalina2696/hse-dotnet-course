@@ -1,55 +1,93 @@
-﻿using System.Globalization;
-using System.Reflection.Metadata.Ecma335;
+﻿using System;
+using System.Collections.Generic;
+using TheMiddleman.Entity;
 
 class Application
 {
-    static void Main()
+    static int QueryParticipantCount()
     {
-        var intermediaries = new List<Intermediary>();
-        var currentDay = 1;
+        Console.WriteLine("Wieviel Zwischenhändler nehmen teil?");
+        return int.Parse(Console.ReadLine() ?? "0");
+    }
 
-        Console.WriteLine("Wieviel Zwischenhändler nehmen teil? ");
+    static string FetchTraderName(int position)
+    {
+        Console.WriteLine($"Name von Zwischenhändler {position}:");
+        return Console.ReadLine() ?? "";
+    }
 
-        int.TryParse(Console.ReadLine(), out int intermediaryCount);
+    static string FetchFirmName(string traderName)
+    {
+        Console.WriteLine($"Name der Firma von {traderName}:");
+        return Console.ReadLine() ?? "";
+    }
 
-        for (int index = 1; index <= intermediaryCount; index++)
+    static Intermediary AssembleTrader(int position)
+    {
+        string traderName = FetchTraderName(position);
+        string firmName = FetchFirmName(traderName);
+        return new Intermediary { Name = traderName, Company = firmName };
+    }
+
+    static List<Intermediary> GenerateParticipantList()
+    {
+        List<Intermediary> participants = new List<Intermediary>();
+        int traderCount = QueryParticipantCount();
+
+        for (int i = 1; i <= traderCount; i++)
         {
-            Console.WriteLine($"Name von Zwischenhändler {index}: ");
-            var individualName = Console.ReadLine() ?? "";
-
-            Console.WriteLine($"Name der Firma von {individualName}: ");
-            var organizationName = Console.ReadLine() ?? "";
-
-            intermediaries.Add(new Intermediary { Name = individualName, Company = organizationName });
+            participants.Add(AssembleTrader(i));
         }
 
-        while (true)
+        return participants;
+    }
+
+    static void RenderTraderInfo(Intermediary trader, int currentDay)
+    {
+        Console.WriteLine($"{trader.Name} von {trader.Company} | Tag {currentDay}");
+        Console.WriteLine("b) Runde beenden");
+    }
+
+    static void DisplayOptions(Intermediary trader, ref int currentDay)
+    {
+        RenderTraderInfo(trader, currentDay);
+        string choice = Console.ReadLine() ?? "";
+
+        if (choice == "b")
         {
-            foreach (var intermediary in intermediaries)
-            {
-                Console.WriteLine($"{intermediary.Name} von {intermediary.Company} | Tag {currentDay}");
-                Console.WriteLine("b) Runde beenden");
-                Console.WriteLine("q) Programm schiessen");
-
-                var selectedOption = Console.ReadLine() ?? "q";
-
-                if (selectedOption.Equals("b", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-                else if (selectedOption.Equals("q", StringComparison.OrdinalIgnoreCase) || selectedOption == "")
-                {
-                    return;
-                }
-            }
-
-            currentDay++;
+            // Do nothing, just continue to next middleman
         }
     }
 
-    private class Intermediary
+    static void RotateIntermediary(List<Intermediary> traders)
     {
-        public string? Name { get; set; }
-        public string? Company { get; set; }
+        if (traders.Count > 1)
+        {
+            var firstMiddleman = traders[0];
+            traders.RemoveAt(0);
+            traders.Add(firstMiddleman);
+        }
+    }
+
+    static void RunDayCycle(List<Intermediary> traders, ref int currentDay)
+    {
+        foreach (var trader in traders)
+        {
+            DisplayOptions(trader, ref currentDay);
+        }
+
+        RotateIntermediary(traders);
+        currentDay++;
+    }
+
+    static void Main()
+    {
+        List<Intermediary> traders = GenerateParticipantList();
+        int currentDay = 1;
+
+        while (true)
+        {
+            RunDayCycle(traders, ref currentDay);
+        }
     }
 }
