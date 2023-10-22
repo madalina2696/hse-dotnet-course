@@ -29,7 +29,7 @@ class Application
         string firmName = FetchFirmName(traderName);
         int initialBalance = GetInitialBalance();
 
-        return new Intermediary { Name = traderName, Company = firmName, AccountBalance = initialBalance };
+        return new Intermediary(traderName, firmName, initialBalance);
     }
 
     static int GetInitialBalance()
@@ -50,7 +50,7 @@ class Application
         }
     }
 
-    static List<Intermediary> GenerateParticipantList()
+    static List<Intermediary> CreateTraderList()
     {
         List<Intermediary> participants = new List<Intermediary>();
         int traderCount = QueryParticipantCount();
@@ -65,8 +65,7 @@ class Application
 
     static void RenderTraderInfo(Intermediary trader, int currentDay)
     {
-        Console.WriteLine($"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Tag {currentDay}"); //geupdated
-        Console.WriteLine("b) Runde beenden");
+        Console.WriteLine($"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Tag {currentDay}"); //geupdated3
     }
 
     static string ReadProductName(string line)
@@ -88,7 +87,7 @@ class Application
     {
         string[] lines = System.IO.File.ReadAllLines("produkte.yml");
         List<Product> products = new List<Product>();
-        Product currentProduct = null;
+        Product? currentProduct = null;
         int idCounter = 1;
 
         foreach (var line in lines)
@@ -107,39 +106,152 @@ class Application
                     products.Add(currentProduct);
                 }
             }
+            else if (line.StartsWith("  baseprice: "))
+            {
+                int basePrice = int.Parse(line.Substring(13));
+                if (currentProduct != null)
+                {
+                    currentProduct.BasePrice = basePrice;
+                }
+            }
+
         }
 
         return products;
     }
 
-
-
-    static void DisplayOptions(Intermediary trader, ref int currentDay)
+    static void DisplayOptions(Intermediary trader, ref int currentDay, List<Product> products)
     {
-        RenderTraderInfo(trader, currentDay);
-        Console.WriteLine("e) Einkaufen");
-        Console.WriteLine("b) Runde beenden");
+        bool endRound = false;
 
-        string choice = Console.ReadLine() ?? "";
+        while (!endRound)
+        {
+            RenderTraderInfo(trader, currentDay);
+            Console.WriteLine("e) Einkaufen");
+            Console.WriteLine("v) Verkaufen");
+            Console.WriteLine("b) Runde beenden");
 
-        if (choice == "b")
-        {
-            // nichts machen, weitergehen zum nächsten Trader
-        }
-        else if (choice == "e")
-        {
-            Console.WriteLine("Verfügbare Produkte:");
-            foreach (var product in trader.Products)
-            {
-                Console.WriteLine($"{product.Id}) {product.Name} ({product.Durability} Tage)");
-            }
-            Console.WriteLine("z) Zurück");
-            if (Console.ReadLine() == "z")
-            {
-                // Züruck zum Hauptmenü
-            }
+            string userChoice = Console.ReadLine() ?? "";
+
+            HandleUserChoice(userChoice, trader, products, ref endRound);
         }
     }
+
+    static void HandleUserChoice(string choice, Intermediary trader, List<Product> products, ref bool endRound)
+    {
+        switch (choice)
+        {
+            case "b":
+                endRound = true;
+                break;
+            case "e":
+                ShowShoppingMenu(products, trader);
+                break;
+            case "v":
+                ShowSellingMenu(trader);
+                break;
+            default:
+                Console.WriteLine("Ungültige Auswahl. Bitte erneut versuchen.");
+                break;
+        }
+    }
+
+    static void ShowShoppingMenu(List<Product> products, Intermediary trader)
+    {
+        Console.WriteLine("Verfügbare Produkte:");
+        foreach (Product product in products)
+        {
+            Console.WriteLine($"{product.Id} {product.Name} ({product.Durability} Tage) ${product.BasePrice}/Stück");
+        }
+        Console.WriteLine("z) Zurück");
+
+        string? choice = Console.ReadLine();
+
+        if (choice == "z")
+        {
+            return;
+        }
+
+        int selectedProductId;
+
+        if (!int.TryParse(choice, out selectedProductId) || int.Parse(choice) <= 0)
+        {
+            return;
+        }
+        Product selectedProduct = products.Find(p => p.Id == selectedProductId);
+
+        Console.WriteLine($"Wieviel von {selectedProduct.Name} kaufen?");
+        int quantity = int.Parse(Console.ReadLine());
+
+        if (quantity <= 0)
+        {
+            return;
+        }
+
+        ExecutePurchase(trader, selectedProduct, quantity);
+    }
+
+    static void ExecutePurchase(Intermediary trader, Product selectedProduct, int quantity)
+    {
+        int totalCost = quantity * selectedProduct.BasePrice;
+        if (trader.AccountBalance < totalCost)
+        {
+            Console.WriteLine("Nicht genügend Geld vorhanden.");
+            return;
+        }
+
+        trader.AccountBalance -= totalCost;
+        trader.OwnedProducts.Add(selectedProduct, quantity);
+        Console.WriteLine($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+    }
+
+    static void ShowSellingMenu(Intermediary trader)
+    {
+        Console.WriteLine("Produkte im Besitz:");
+        int index = 1;
+        foreach (var entry in trader.OwnedProducts)
+        {
+            Console.WriteLine($"{index}) {entry.Key.Name} ({entry.Value}) ${entry.Key.SellingPrice}/Stück");
+            index++;
+        }
+        Console.WriteLine("z) Zurück");
+
+        string userChoice = Console.ReadLine() ?? "";
+        if (userChoice == "z")
+        {
+            return;
+        }
+
+        int selectedProductIndex = int.Parse(userChoice);
+        var selectedEntry = trader.OwnedProducts.ElementAt(selectedProductIndex - 1);
+        var selectedProduct = selectedEntry.Key;
+        var availableQuantity = selectedEntry.Value;
+
+        Console.WriteLine($"Wieviel von {selectedProduct.Name} verkaufen (max. {availableQuantity})?");
+        int quantityToSell = int.Parse(Console.ReadLine() ?? "0");
+
+        if (quantityToSell <= 0 || quantityToSell > availableQuantity)
+        {
+            Console.WriteLine("Ungültige Menge.");
+            return;
+        }
+
+        ExecutePurchase(trader, selectedProduct, quantityToSell);
+    }
+
+    static void ExecuteSale(Intermediary trader, Product selectedProduct, int quantityToSell)
+    {
+        trader.AccountBalance += quantityToSell * selectedProduct.SellingPrice;
+        trader.OwnedProducts[selectedProduct] -= quantityToSell;
+
+        if (trader.OwnedProducts[selectedProduct] == 0)
+        {
+            trader.OwnedProducts.Remove(selectedProduct);
+        }
+
+        Console.WriteLine($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+    }
+
 
     static void RotateIntermediary(List<Intermediary> traders)
     {
@@ -151,11 +263,11 @@ class Application
         }
     }
 
-    static void RunDayCycle(List<Intermediary> traders, ref int currentDay)
+    static void RunDayCycle(List<Intermediary> traders, ref int currentDay, List<Product> products)
     {
         foreach (var trader in traders)
         {
-            DisplayOptions(trader, ref currentDay);
+            DisplayOptions(trader, ref currentDay, products);
         }
 
         RotateIntermediary(traders);
@@ -164,12 +276,13 @@ class Application
 
     static void Main()
     {
-        List<Intermediary> traders = GenerateParticipantList();
+        List<Intermediary> traders = CreateTraderList();
+        List<Product> products = ReadProducts();
         int currentDay = 1;
 
         while (true)
         {
-            RunDayCycle(traders, ref currentDay);
+            RunDayCycle(traders, ref currentDay, products);
         }
     }
 }

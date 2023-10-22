@@ -1,24 +1,36 @@
 - name: Gurke
   durability: 21
+  baseprice: 5
 - name: Aprikose
   durability: 4
+  baseprice: 20
 - name: Cherrytomaten
   durability: 10
+  baseprice: 8
 - name: Süßkartoffel
   durability: 30
+  baseprice: 6
 - name: Eis
   durability: 40
+  baseprice: 12
 - name: Karotte
   durability: 20
+  baseprice: 4
 - name: Apfel
   durability: 14
+  baseprice: 3
 - name: Erdbeere
   durability: 7
+  baseprice: 15
 - name: KiBa
   durability: 5
+  baseprice: 10
 - name: Milch
   durability: 3
+  baseprice: 2
 - name: Cheddar
   durability: 25
+  baseprice: 18
 - name: Schokolade
   durability: 180
+  baseprice: 7
