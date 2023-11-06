@@ -48,7 +48,7 @@ class UserInterface
     }
     public void RenderTraderInfo(Intermediary trader, int currentDay)
     {
-        int usedStorage = trader.CalculateUsedStorage();
+        int usedStorage = businessLogic.CalculateUsedStorage(trader);
         Console.WriteLine($"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}");
     }
 
@@ -71,6 +71,7 @@ class UserInterface
             RenderTraderInfo(trader, currentDay);
             Console.WriteLine("e) Einkaufen");
             Console.WriteLine("v) Verkaufen");
+            Console.WriteLine("l) Lager vergrößern");
             Console.WriteLine("b) Runde beenden");
             string userChoice = Console.ReadLine() ?? "";
             HandleUserChoice(userChoice, trader, ref endRound);
@@ -90,6 +91,9 @@ class UserInterface
             case "v":
                 ShowSellingMenu(trader);
                 break;
+            case "l":
+                ShowStorageUpgradeMenu(trader);
+                break;
             default:
                 Console.WriteLine("Ungültige Auswahl. Bitte erneut versuchen.");
                 break;
@@ -105,13 +109,17 @@ class UserInterface
             Console.WriteLine($"{product.Id} {product.Name} ({product.Durability} Tage) - Verfügbar: {product.Availability} ${product.BasePrice}/Stück");
         }
         Console.WriteLine("z) Zurück");
-        string? choice = Console.ReadLine();
-        if (choice == "z")
+        string? userChoice = Console.ReadLine();
+        if (userChoice == "z")
         {
             return;
         }
+        else if (!int.TryParse(userChoice, out int _))
+        {
+            ShowShoppingMenu(trader);
+        }
         int selectedProductId;
-        if (!int.TryParse(choice, out selectedProductId) || int.Parse(choice) <= 0)
+        if (!int.TryParse(userChoice, out selectedProductId) || int.Parse(userChoice) <= 0)
         {
             return;
         }
@@ -144,6 +152,10 @@ class UserInterface
         {
             return;
         }
+        else if (!int.TryParse(userChoice, out int _))
+        {
+            ShowSellingMenu(trader);
+        }
         int selectedProductIndex = int.Parse(userChoice);
         var selectedEntry = trader.OwnedProducts.ElementAt(selectedProductIndex - 1);
         var selectedProduct = selectedEntry.Key;
@@ -156,5 +168,17 @@ class UserInterface
             return;
         }
         businessLogic.ExecuteSale(trader, selectedProduct, quantityToSell);
+    }
+
+    public void ShowStorageUpgradeMenu(Intermediary trader)
+    {
+        Console.WriteLine("Um wie viele Einheiten möchten Sie das Lager vergrößern? Kosten: $50 pro Einheit.");
+        int increaseAmount;
+        if (!int.TryParse(Console.ReadLine(), out increaseAmount) || increaseAmount <= 0)
+        {
+            Console.WriteLine("Ungültige Eingabe oder Abbruch durch den Benutzer.");
+            return;
+        }
+        businessLogic.UpgradeTraderStorage(trader, increaseAmount);
     }
 }

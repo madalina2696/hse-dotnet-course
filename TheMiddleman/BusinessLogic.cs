@@ -46,7 +46,7 @@ class BusinessLogic
     {
 
         int totalCost = quantity * selectedProduct.BasePrice;
-        int usedStorage = trader.CalculateUsedStorage();
+        int usedStorage = CalculateUsedStorage(trader);
 
         if (trader.AccountBalance < totalCost)
         {
@@ -114,6 +114,7 @@ class BusinessLogic
         if (currentDay > 1)
         {
             UpdateProductAvailability();
+            UpdateProductPrices();
         }
         foreach (Intermediary trader in traders)
         {
@@ -133,6 +134,76 @@ class BusinessLogic
             product.Availability = Math.Max(0, product.Availability);
             product.Availability = Math.Min(maxAvailability, product.Availability);
         }
+    }
+
+    public void UpdateProductPrices()
+    {
+        foreach (Product product in products)
+        {
+            double priceChangePercent;
+            double MaxAvailability = product.MaxProductionRate * product.Durability;
+            double AvailabilityProcents = product.Availability / MaxAvailability;
+            double newBuyingPrice;
+            if (AvailabilityProcents < 0.25)
+            {
+                priceChangePercent = -0.1 + (random.NextDouble() * (0.4 + 0.1));
+                newBuyingPrice = product.BasePrice * (1 + priceChangePercent);
+            }
+            else if (AvailabilityProcents >= 0.25 && AvailabilityProcents <= 0.80)
+            {
+                priceChangePercent = -0.05 + (random.NextDouble() * (0.05 + 0.05));
+                newBuyingPrice = product.BasePrice * (1 + priceChangePercent);
+            }
+            else
+            {
+                priceChangePercent = -0.1 + (random.NextDouble() * (0.06 + 0.1));
+                newBuyingPrice = product.BuyingPrice * (1 + priceChangePercent);
+            }
+            newBuyingPrice = Math.Max(newBuyingPrice, product.BasePrice * 0.25);
+            newBuyingPrice = Math.Min(newBuyingPrice, product.BasePrice * 3);
+            product.BuyingPrice = (int)newBuyingPrice;
+        }
+    }
+
+    public void UpgradeTraderStorage(Intermediary trader, int increaseAmount)
+    {
+        if (UpgradeStorageCapacity(trader, increaseAmount))
+        {
+            Console.WriteLine("Lagerupgrade erfolgreich.");
+        }
+        else
+        {
+            Console.WriteLine("Lagerupgrade fehlgeschlagen.");
+        }
+    }
+
+    public int CalculateUsedStorage(Intermediary trader)
+    {
+        int usedStorage = 0;
+        foreach (var entry in trader.OwnedProducts)
+        {
+            usedStorage += entry.Value;
+        }
+        return usedStorage;
+    }
+
+    public bool UpgradeStorageCapacity(Intermediary trader, int increaseAmount)
+    {
+        if (increaseAmount <= 0)
+        {
+            Console.WriteLine("Die Vergrößerung des Lagers wurde abgebrochen.");
+            return false;
+        }
+        int upgradeCost = increaseAmount * 50;
+        if (trader.AccountBalance < upgradeCost)
+        {
+            Console.WriteLine("Nicht genügend Geld für das Upgrade vorhanden.");
+            return false;
+        }
+        trader.StorageCapacity += increaseAmount;
+        trader.AccountBalance -= upgradeCost;
+        Console.WriteLine($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.");
+        return true;
     }
 
     public List<Product> GetProducts()
