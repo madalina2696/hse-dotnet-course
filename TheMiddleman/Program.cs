@@ -5,7 +5,7 @@ using TheMiddleman.Entity;
 
 class Application
 {
-    static int QueryParticipantCount()
+    /* static int QueryParticipantCount()
     {
         Console.WriteLine("Wieviel Zwischenhändler nehmen teil?");
         return int.Parse(Console.ReadLine() ?? "0");
@@ -272,17 +272,27 @@ class Application
 
         RotateIntermediary(traders);
         currentDay++;
-    }
+    } */
 
     static void Main()
     {
-        List<Intermediary> traders = CreateTraderList();
-        List<Product> products = ReadProducts();
-        int currentDay = 1;
+        // Create instances of BusinessLogic and UserInterface
+        BusinessLogic businessLogic = new BusinessLogic();
+        UserInterface ui = new UserInterface(businessLogic);
 
+        // Create a list of traders
+        List<Intermediary> traders = businessLogic.CreateTraderList(ui);
+
+        // Read the list of products
+        List<Product> products = businessLogic.ReadProducts();
+
+        int currentDay = 1; // Start from day 1
+
+        // Loop to run the day cycles
         while (true)
         {
-            RunDayCycle(traders, ref currentDay, products);
+            businessLogic.RunDayCycle(traders, ui, ref currentDay);
+            // Add logic to break the loop if needed
         }
     }
 }
