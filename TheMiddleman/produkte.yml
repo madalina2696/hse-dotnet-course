@@ -1,36 +1,71 @@
 - name: Gurke
   durability: 21
   baseprice: 5
+  minProductionRate: -15
+  maxProductionRate: 15
+
 - name: Aprikose
   durability: 4
   baseprice: 20
+  minProductionRate: -12
+  maxProductionRate: 12
+
 - name: Cherrytomaten
   durability: 10
   baseprice: 8
+  minProductionRate: -18
+  maxProductionRate: 18
+
 - name: Süßkartoffel
   durability: 30
   baseprice: 6
+  minProductionRate: -10
+  maxProductionRate: 10
+
 - name: Eis
   durability: 40
   baseprice: 12
+  minProductionRate: -20
+  maxProductionRate: 20
+
 - name: Karotte
   durability: 20
   baseprice: 4
+  minProductionRate: -14
+  maxProductionRate: 14
+
 - name: Apfel
   durability: 14
   baseprice: 3
+  minProductionRate: -16
+  maxProductionRate: 16
+
 - name: Erdbeere
   durability: 7
   baseprice: 15
+  minProductionRate: -13
+  maxProductionRate: 13
+
 - name: KiBa
   durability: 5
   baseprice: 10
+  minProductionRate: -9
+  maxProductionRate: 9
+
 - name: Milch
   durability: 3
   baseprice: 2
+  minProductionRate: -11
+  maxProductionRate: 11
+
 - name: Cheddar
   durability: 25
   baseprice: 18
+  minProductionRate: -7
+  maxProductionRate: 7
+
 - name: Schokolade
   durability: 180
   baseprice: 7
+  minProductionRate: -22
+  maxProductionRate: 22

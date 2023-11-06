@@ -276,23 +276,21 @@ class Application
 
     static void Main()
     {
-        // Create instances of BusinessLogic and UserInterface
+        // Instanzen BusinessLogic und UserInterface
         BusinessLogic businessLogic = new BusinessLogic();
         UserInterface ui = new UserInterface(businessLogic);
 
-        // Create a list of traders
+        // Tradersliste
         List<Intermediary> traders = businessLogic.CreateTraderList(ui);
 
-        // Read the list of products
-        List<Product> products = businessLogic.ReadProducts();
+        // Produkliste ablesen
+        List<Product> products = businessLogic.GetProducts();
 
-        int currentDay = 1; // Start from day 1
+        int currentDay = 1; // fängt bei 1 an
 
-        // Loop to run the day cycles
         while (true)
         {
             businessLogic.RunDayCycle(traders, ui, ref currentDay);
-            // Add logic to break the loop if needed
         }
     }
 }

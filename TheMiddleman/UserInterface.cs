@@ -46,10 +46,10 @@ class UserInterface
                 return 10000;
         }
     }
-
     public void RenderTraderInfo(Intermediary trader, int currentDay)
     {
-        Console.WriteLine($"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Tag {currentDay}");
+        int usedStorage = trader.CalculateUsedStorage();
+        Console.WriteLine($"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}");
     }
 
     public string ReadProductName(string line)
@@ -98,10 +98,11 @@ class UserInterface
 
     public void ShowShoppingMenu(Intermediary trader)
     {
+
         Console.WriteLine("Verfügbare Produkte:");
-        foreach (Product product in businessLogic.ReadProducts())
+        foreach (Product product in businessLogic.GetProducts())
         {
-            Console.WriteLine($"{product.Id} {product.Name} ({product.Durability} Tage) ${product.BasePrice}/Stück");
+            Console.WriteLine($"{product.Id} {product.Name} ({product.Durability} Tage) - Verfügbar: {product.Availability} ${product.BasePrice}/Stück");
         }
         Console.WriteLine("z) Zurück");
         string? choice = Console.ReadLine();
@@ -114,27 +115,18 @@ class UserInterface
         {
             return;
         }
-        Product? selectedProduct = businessLogic.ReadProducts().Find(p => p.Id == selectedProductId);
+        Product? selectedProduct = businessLogic.GetProducts().Find(p => p.Id == selectedProductId);
         Console.WriteLine($"Wieviel von {selectedProduct?.Name} kaufen?");
         int quantity = int.Parse(Console.ReadLine()!);
         if (quantity <= 0)
         {
             return;
         }
-        businessLogic.ExecutePurchase(trader, selectedProduct, quantity);
-    }
-
-    static void ExecutePurchase(Intermediary trader, Product selectedProduct, int quantity)
-    {
-        int totalCost = quantity * selectedProduct.BasePrice;
-        if (trader.AccountBalance < totalCost)
+        if (selectedProduct == null)
         {
-            Console.WriteLine("Nicht genügend Geld vorhanden.");
             return;
         }
-        trader.AccountBalance -= totalCost;
-        trader.OwnedProducts.Add(selectedProduct, quantity);
-        Console.WriteLine($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+        businessLogic.ExecutePurchase(trader, selectedProduct, quantity);
     }
 
     public void ShowSellingMenu(Intermediary trader)

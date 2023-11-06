@@ -22,6 +22,21 @@ class ProductsParser
         return int.Parse(line.Substring(14));
     }
 
+    private int ReadProductMinProductionRate(string line)
+    {
+        return int.Parse(line.Substring(20));
+    }
+
+    private int ReadBasePrice(string line)
+    {
+        return int.Parse(line.Substring(13));
+    }
+
+    private int ReadProductMaxProductionRate(string line)
+    {
+        return int.Parse(line.Substring(20));
+    }
+
     public List<Product> ReadProducts()
     {
         string[] lines = File.ReadAllLines(_filePath);
@@ -33,29 +48,38 @@ class ProductsParser
         {
             if (line.StartsWith("- name: "))
             {
-                string name = ReadProductName(line);
-                currentProduct = new Product { Id = idCounter++, Name = name, Durability = 0 };
+                currentProduct = new Product { Id = idCounter++, Name = ReadProductName(line) };
             }
             else if (line.StartsWith("  durability: "))
             {
                 if (currentProduct != null)
                 {
-                    int durability = ReadProductDurability(line);
-                    currentProduct.Durability = durability;
+                    currentProduct.Durability = ReadProductDurability(line);
+                    products.Add(currentProduct);
                 }
             }
             else if (line.StartsWith("  baseprice: "))
             {
-                int basePrice = int.Parse(line.Substring(13));
                 if (currentProduct != null)
                 {
-                    currentProduct.BasePrice = basePrice;
-                    products.Add(currentProduct);
-                    currentProduct = null;
+                    currentProduct.BasePrice = ReadBasePrice(line);
+                }
+            }
+            else if (line.StartsWith("  minProductionRate: "))
+            {
+                if (currentProduct != null)
+                {
+                    currentProduct.MinProductionRate = ReadProductMinProductionRate(line);
+                }
+            }
+            else if (line.StartsWith("  maxProductionRate: "))
+            {
+                if (currentProduct != null)
+                {
+                    currentProduct.MaxProductionRate = ReadProductMaxProductionRate(line);
                 }
             }
         }
-
         return products;
     }
 }
