@@ -140,7 +140,7 @@ class BusinessLogic
         UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
 
-    public void RotateTrader(List<Trader> traders)
+    public void MoveFirstTraderToEnd(List<Trader> traders)
     {
         if (traders.Count > 1)
         {
@@ -175,7 +175,7 @@ class BusinessLogic
 
     private void RotateTraders(List<Trader> traders)
     {
-        RotateTrader(traders);
+        MoveFirstTraderToEnd(traders);
     }
 
     public void RunDayCycle(List<Trader> traders, UserInterface ui, ref int currentDay)
