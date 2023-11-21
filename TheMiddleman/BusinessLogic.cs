@@ -13,23 +13,23 @@ class BusinessLogic
         products = parser.ReadProducts();
     }
 
-    public Intermediary CreateTrader(int position, UserInterface ui)
+    public Trader CreateTrader(int position, UserInterface ui)
     {
-        string traderName = ui.FetchTraderName(position);
+        string traderName = ui.ReadTraderNameAtPosition(position);
         string firmName = ui.FetchFirmName(traderName);
         int initialBalance = GetInitialBalance(ui);
-        return new Intermediary(traderName, firmName, initialBalance);
+        return new Trader(traderName, firmName, initialBalance);
     }
 
     private int GetInitialBalance(UserInterface ui)
     {
-        return ui.GetInitialBalance();
+        return ui.AssignStartingBalance(ui.AskForDifficultyLevel());
     }
 
-    public List<Intermediary> CreateTraderList(UserInterface ui)
+    public List<Trader> CreateTraders(UserInterface ui)
     {
-        List<Intermediary> participants = new List<Intermediary>();
-        int traderCount = ui.QueryParticipantCount();
+        List<Trader> participants = new List<Trader>();
+        int traderCount = ui.ReadParticipantCount();
         for (int i = 1; i <= traderCount; i++)
         {
             participants.Add(CreateTrader(i, ui));
@@ -42,25 +42,23 @@ class BusinessLogic
         return new Product { Id = id, Name = name, Durability = durability };
     }
 
-    public void ExecutePurchase(Intermediary trader, Product selectedProduct, int quantity)
+    public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
-
         int totalCost = quantity * selectedProduct.BasePrice;
         int usedStorage = CalculateUsedStorage(trader);
-
         if (trader.AccountBalance < totalCost)
         {
-            Console.WriteLine("Nicht genügend Geld vorhanden.\n");
+            UserInterface.ShowError("Nicht genügend Geld vorhanden.");
             return;
         }
         if (usedStorage + quantity > trader.StorageCapacity)
         {
-            Console.WriteLine("Nicht genug Lagerplatz verfügbar.\n");
+            UserInterface.ShowError("Nicht genug Lagerplatz verfügbar.");
             return;
         }
         if (trader.AccountBalance < totalCost)
         {
-            Console.WriteLine("Nicht genügend Geld vorhanden.\n");
+            UserInterface.ShowError("Nicht genügend Geld vorhanden.");
             return;
         }
         trader.AccountBalance -= totalCost;
@@ -72,21 +70,20 @@ class BusinessLogic
         {
             trader.OwnedProducts.Add(selectedProduct, quantity);
         }
-
         if (selectedProduct.Availability < quantity)
         {
-            Console.WriteLine("Nicht genügend Produkt verfügbar.");
+            UserInterface.ShowError("Nicht genügend Produkt verfügbar.");
             return;
         }
-        Console.WriteLine($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
         selectedProduct.Availability -= quantity;
     }
 
-    public void ExecuteSale(Intermediary trader, Product selectedProduct, int quantityToSell)
+    public void Sale(Trader trader, Product selectedProduct, int quantityToSell)
     {
         if (!trader.OwnedProducts.ContainsKey(selectedProduct) || trader.OwnedProducts[selectedProduct] < quantityToSell)
         {
-            Console.WriteLine("Nicht genügend Ware vorhanden.");
+            UserInterface.ShowError("Nicht genügend Ware vorhanden.");
             return;
         }
         int saleRevenue = quantityToSell * selectedProduct.SellingPrice;
@@ -96,10 +93,10 @@ class BusinessLogic
         {
             trader.OwnedProducts.Remove(selectedProduct);
         }
-        Console.WriteLine($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+        UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
 
-    public void RotateIntermediary(List<Intermediary> traders)
+    public void RotateTrader(List<Trader> traders)
     {
         if (traders.Count > 1)
         {
@@ -109,18 +106,20 @@ class BusinessLogic
         }
     }
 
-    public void RunDayCycle(List<Intermediary> traders, UserInterface ui, ref int currentDay)
+    public void RunDayCycle(List<Trader> traders, UserInterface ui, ref int currentDay)
     {
+        CheckForBankruptcy(traders);
         if (currentDay > 1)
         {
             UpdateProductAvailability();
             UpdateProductPrices();
         }
-        foreach (Intermediary trader in traders)
+        foreach (Trader trader in traders)
         {
             ui.DisplayOptions(trader, ref currentDay);
+            ApplyStorageCosts(trader);
         }
-        RotateIntermediary(traders);
+        RotateTrader(traders);
         currentDay++;
     }
 
@@ -157,7 +156,7 @@ class BusinessLogic
             else
             {
                 priceChangePercent = -0.1 + (random.NextDouble() * (0.06 + 0.1));
-                newBuyingPrice = product.BuyingPrice * (1 + priceChangePercent);
+                newBuyingPrice = product.BasePrice * (1 + priceChangePercent);
             }
             newBuyingPrice = Math.Max(newBuyingPrice, product.BasePrice * 0.25);
             newBuyingPrice = Math.Min(newBuyingPrice, product.BasePrice * 3);
@@ -165,19 +164,19 @@ class BusinessLogic
         }
     }
 
-    public void UpgradeTraderStorage(Intermediary trader, int increaseAmount)
+    public void UpgradeTraderStorage(Trader trader, int increaseAmount)
     {
         if (UpgradeStorageCapacity(trader, increaseAmount))
         {
-            Console.WriteLine("Lagerupgrade erfolgreich.");
+            UserInterface.ShowMessage("Lagerupgrade erfolgreich.");
         }
         else
         {
-            Console.WriteLine("Lagerupgrade fehlgeschlagen.");
+            UserInterface.ShowError("Lagerupgrade fehlgeschlagen.");
         }
     }
 
-    public int CalculateUsedStorage(Intermediary trader)
+    public int CalculateUsedStorage(Trader trader)
     {
         int usedStorage = 0;
         foreach (var entry in trader.OwnedProducts)
@@ -187,23 +186,55 @@ class BusinessLogic
         return usedStorage;
     }
 
-    public bool UpgradeStorageCapacity(Intermediary trader, int increaseAmount)
+    public bool UpgradeStorageCapacity(Trader trader, int increaseAmount)
     {
         if (increaseAmount <= 0)
         {
-            Console.WriteLine("Die Vergrößerung des Lagers wurde abgebrochen.");
+            UserInterface.ShowError("Die Vergrößerung des Lagers wurde abgebrochen.");
             return false;
         }
         int upgradeCost = increaseAmount * 50;
         if (trader.AccountBalance < upgradeCost)
         {
-            Console.WriteLine("Nicht genügend Geld für das Upgrade vorhanden.");
+            UserInterface.ShowError("Nicht genügend Geld für das Upgrade vorhanden.");
             return false;
         }
         trader.StorageCapacity += increaseAmount;
         trader.AccountBalance -= upgradeCost;
-        Console.WriteLine($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.");
+        UserInterface.ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.");
         return true;
+    }
+
+    public void ApplyStorageCosts(Trader trader)
+    {
+        int usedStorage = CalculateUsedStorage(trader);
+        int freeStorage = trader.StorageCapacity - usedStorage;
+        int storageCosts = (usedStorage * 5) + (freeStorage * 1);
+        trader.AccountBalance -= storageCosts;
+    }
+
+    public void CheckForBankruptcy(List<Trader> traders)
+    {
+        List<Trader> tradersToRemove = new List<Trader>();
+        foreach (var trader in traders)
+        {
+            if (trader.AccountBalance < 0)
+            {
+                UserInterface.ShowError($"Zwischenhändler {trader.Name} ist bankrott gegangen.");
+                tradersToRemove.Add(trader);
+            }
+        }
+
+        foreach (var trader in tradersToRemove)
+        {
+            traders.Remove(trader);
+        }
+
+        if (traders.Count == 0)
+        {
+            UserInterface.ShowError("Alle Zwischenhändler sind bankrott. Die Simulation wird beendet.");
+            Environment.Exit(0);
+        }
     }
 
     public List<Product> GetProducts()

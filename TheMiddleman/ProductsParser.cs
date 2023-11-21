@@ -43,7 +43,6 @@ class ProductsParser
         List<Product> products = new List<Product>();
         Product? currentProduct = null;
         int idCounter = 1;
-
         foreach (var line in lines)
         {
             if (line.StartsWith("- name: "))
@@ -52,34 +51,54 @@ class ProductsParser
             }
             else if (line.StartsWith("  durability: "))
             {
-                if (currentProduct != null)
-                {
-                    currentProduct.Durability = ReadProductDurability(line);
-                    products.Add(currentProduct);
-                }
+                SetProductDurability(currentProduct, line, products);
             }
             else if (line.StartsWith("  baseprice: "))
             {
-                if (currentProduct != null)
-                {
-                    currentProduct.BasePrice = ReadBasePrice(line);
-                }
+                SetProductBasePrice(currentProduct, line);
             }
             else if (line.StartsWith("  minProductionRate: "))
             {
-                if (currentProduct != null)
-                {
-                    currentProduct.MinProductionRate = ReadProductMinProductionRate(line);
-                }
+                SetProductMinProductionRate(currentProduct, line);
             }
             else if (line.StartsWith("  maxProductionRate: "))
             {
-                if (currentProduct != null)
-                {
-                    currentProduct.MaxProductionRate = ReadProductMaxProductionRate(line);
-                }
+                SetProductMaxProductionRate(currentProduct, line);
             }
         }
         return products;
+    }
+
+    private void SetProductDurability(Product? product, string line, List<Product> products)
+    {
+        if (product != null)
+        {
+            product.Durability = ReadProductDurability(line);
+            products.Add(product);
+        }
+    }
+
+    private void SetProductBasePrice(Product? product, string line)
+    {
+        if (product != null)
+        {
+            product.BasePrice = ReadBasePrice(line);
+        }
+    }
+
+    private void SetProductMinProductionRate(Product? product, string line)
+    {
+        if (product != null)
+        {
+            product.MinProductionRate = ReadProductMinProductionRate(line);
+        }
+    }
+
+    private void SetProductMaxProductionRate(Product? product, string line)
+    {
+        if (product != null)
+        {
+            product.MaxProductionRate = ReadProductMaxProductionRate(line);
+        }
     }
 }
