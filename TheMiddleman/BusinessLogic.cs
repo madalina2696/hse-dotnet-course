@@ -42,25 +42,39 @@ class BusinessLogic
         return new Product { Id = id, Name = name, Durability = durability };
     }
 
-    public void Purchase(Trader trader, Product selectedProduct, int quantity)
+    private bool IsSufficientBalanceForPurchase(Trader trader, int totalCost)
     {
-        int totalCost = quantity * selectedProduct.BasePrice;
-        int usedStorage = CalculateUsedStorage(trader);
         if (trader.AccountBalance < totalCost)
         {
             UserInterface.ShowError("Nicht genügend Geld vorhanden.");
-            return;
+            return false;
         }
+        return true;
+    }
+
+    private bool HasSufficientStorageForPurchase(Trader trader, Product selectedProduct, int quantity)
+    {
+        int usedStorage = CalculateUsedStorage(trader);
         if (usedStorage + quantity > trader.StorageCapacity)
         {
             UserInterface.ShowError("Nicht genug Lagerplatz verfügbar.");
-            return;
+            return false;
         }
-        if (trader.AccountBalance < totalCost)
+        return true;
+    }
+
+    private bool IsProductAvailableInRequiredQuantity(Product selectedProduct, int quantity)
+    {
+        if (selectedProduct.Availability < quantity)
         {
-            UserInterface.ShowError("Nicht genügend Geld vorhanden.");
-            return;
+            UserInterface.ShowError("Nicht genügend Produkte verfügbar.");
+            return false;
         }
+        return true;
+    }
+
+    private void UpdateTraderStatus(Trader trader, Product selectedProduct, int quantity, int totalCost)
+    {
         trader.AccountBalance -= totalCost;
         if (trader.OwnedProducts.ContainsKey(selectedProduct))
         {
@@ -70,29 +84,59 @@ class BusinessLogic
         {
             trader.OwnedProducts.Add(selectedProduct, quantity);
         }
-        if (selectedProduct.Availability < quantity)
-        {
-            UserInterface.ShowError("Nicht genügend Produkt verfügbar.");
-            return;
-        }
-        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
         selectedProduct.Availability -= quantity;
     }
 
-    public void Sale(Trader trader, Product selectedProduct, int quantityToSell)
+    public void Purchase(Trader trader, Product selectedProduct, int quantity)
+    {
+        int totalCost = quantity * selectedProduct.BasePrice;
+
+        if (!IsSufficientBalanceForPurchase(trader, totalCost) ||
+            !HasSufficientStorageForPurchase(trader, selectedProduct, quantity) ||
+            !IsProductAvailableInRequiredQuantity(selectedProduct, quantity))
+        {
+            return;
+        }
+
+        UpdateTraderStatus(trader, selectedProduct, quantity, totalCost);
+        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+    }
+
+    private bool IsProductAvailableForSale(Trader trader, Product selectedProduct, int quantityToSell)
     {
         if (!trader.OwnedProducts.ContainsKey(selectedProduct) || trader.OwnedProducts[selectedProduct] < quantityToSell)
         {
             UserInterface.ShowError("Nicht genügend Ware vorhanden.");
-            return;
+            return false;
         }
+        return true;
+    }
+
+    private void UpdateTraderStatusAfterSale(Trader trader, Product selectedProduct, int quantityToSell)
+    {
         int saleRevenue = quantityToSell * selectedProduct.SellingPrice;
         trader.AccountBalance += saleRevenue;
         trader.OwnedProducts[selectedProduct] -= quantityToSell;
+    }
+
+    private void UpdateOwnedProductsAfterSale(Trader trader, Product selectedProduct)
+    {
         if (trader.OwnedProducts[selectedProduct] == 0)
         {
             trader.OwnedProducts.Remove(selectedProduct);
         }
+    }
+
+    public void Sale(Trader trader, Product selectedProduct, int quantityToSell)
+    {
+        if (!IsProductAvailableForSale(trader, selectedProduct, quantityToSell))
+        {
+            return;
+        }
+
+        UpdateTraderStatusAfterSale(trader, selectedProduct, quantityToSell);
+        UpdateOwnedProductsAfterSale(trader, selectedProduct);
+
         UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
 
@@ -106,20 +150,40 @@ class BusinessLogic
         }
     }
 
-    public void RunDayCycle(List<Trader> traders, UserInterface ui, ref int currentDay)
+    private void ProcessBankruptcies(List<Trader> traders)
     {
         CheckForBankruptcy(traders);
+    }
+
+    private void UpdateProducts(int currentDay)
+    {
         if (currentDay > 1)
         {
             UpdateProductAvailability();
             UpdateProductPrices();
         }
+    }
+
+    private void InteractWithTraders(List<Trader> traders, UserInterface ui, ref int currentDay)
+    {
         foreach (Trader trader in traders)
         {
             ui.DisplayOptions(trader, ref currentDay);
             ApplyStorageCosts(trader);
         }
+    }
+
+    private void RotateTraders(List<Trader> traders)
+    {
         RotateTrader(traders);
+    }
+
+    public void RunDayCycle(List<Trader> traders, UserInterface ui, ref int currentDay)
+    {
+        ProcessBankruptcies(traders);
+        UpdateProducts(currentDay);
+        InteractWithTraders(traders, ui, ref currentDay);
+        RotateTraders(traders);
         currentDay++;
     }
 
@@ -164,18 +228,6 @@ class BusinessLogic
         }
     }
 
-    public void UpgradeTraderStorage(Trader trader, int increaseAmount)
-    {
-        if (UpgradeStorageCapacity(trader, increaseAmount))
-        {
-            UserInterface.ShowMessage("Lagerupgrade erfolgreich.");
-        }
-        else
-        {
-            UserInterface.ShowError("Lagerupgrade fehlgeschlagen.");
-        }
-    }
-
     public int CalculateUsedStorage(Trader trader)
     {
         int usedStorage = 0;
@@ -186,22 +238,53 @@ class BusinessLogic
         return usedStorage;
     }
 
-    public bool UpgradeStorageCapacity(Trader trader, int increaseAmount)
+    private bool IsUpgradeAmountValid(int increaseAmount)
     {
         if (increaseAmount <= 0)
         {
             UserInterface.ShowError("Die Vergrößerung des Lagers wurde abgebrochen.");
             return false;
         }
-        int upgradeCost = increaseAmount * 50;
+        return true;
+    }
+
+    private bool HasSufficientFundsForUpgrade(Trader trader, int upgradeCost)
+    {
         if (trader.AccountBalance < upgradeCost)
         {
             UserInterface.ShowError("Nicht genügend Geld für das Upgrade vorhanden.");
             return false;
         }
+        return true;
+    }
+
+    private void ApplyStorageUpgrade(Trader trader, int increaseAmount, int upgradeCost)
+    {
         trader.StorageCapacity += increaseAmount;
         trader.AccountBalance -= upgradeCost;
+    }
+
+    private void DisplayUpgradeSuccessMessage(int increaseAmount, int upgradeCost)
+    {
         UserInterface.ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.");
+    }
+
+    public bool UpgradeStorageCapacity(Trader trader, int increaseAmount)
+    {
+        if (!IsUpgradeAmountValid(increaseAmount))
+        {
+            return false;
+        }
+
+        int upgradeCost = increaseAmount * 50;
+        if (!HasSufficientFundsForUpgrade(trader, upgradeCost))
+        {
+            return false;
+        }
+
+        ApplyStorageUpgrade(trader, increaseAmount, upgradeCost);
+        DisplayUpgradeSuccessMessage(increaseAmount, upgradeCost);
+
         return true;
     }
 
@@ -213,7 +296,31 @@ class BusinessLogic
         trader.AccountBalance -= storageCosts;
     }
 
-    public void CheckForBankruptcy(List<Trader> traders)
+    /*     public void CheckForBankruptcy(List<Trader> traders)
+        {
+            List<Trader> tradersToRemove = new List<Trader>();
+            foreach (var trader in traders)
+            {
+                if (trader.AccountBalance < 0)
+                {
+                    UserInterface.ShowError($"Zwischenhändler {trader.Name} ist bankrott gegangen.");
+                    tradersToRemove.Add(trader);
+                }
+            }
+
+            foreach (var trader in tradersToRemove)
+            {
+                traders.Remove(trader);
+            }
+
+            if (traders.Count == 0)
+            {
+                UserInterface.ShowError("Alle Zwischenhändler sind bankrott. Die Simulation wird beendet.");
+                Environment.Exit(0);
+            }
+        } */
+
+    private List<Trader> IdentifyBankruptTraders(List<Trader> traders)
     {
         List<Trader> tradersToRemove = new List<Trader>();
         foreach (var trader in traders)
@@ -224,17 +331,31 @@ class BusinessLogic
                 tradersToRemove.Add(trader);
             }
         }
+        return tradersToRemove;
+    }
 
+    private void RemoveBankruptTraders(List<Trader> traders, List<Trader> tradersToRemove)
+    {
         foreach (var trader in tradersToRemove)
         {
             traders.Remove(trader);
         }
+    }
 
+    private void TerminateSimulationIfAllBankrupt(List<Trader> traders)
+    {
         if (traders.Count == 0)
         {
             UserInterface.ShowError("Alle Zwischenhändler sind bankrott. Die Simulation wird beendet.");
             Environment.Exit(0);
         }
+    }
+
+    public void CheckForBankruptcy(List<Trader> traders)
+    {
+        List<Trader> tradersToRemove = IdentifyBankruptTraders(traders);
+        RemoveBankruptTraders(traders, tradersToRemove);
+        TerminateSimulationIfAllBankrupt(traders);
     }
 
     public List<Product> GetProducts()
