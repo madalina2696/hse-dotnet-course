@@ -10,7 +10,7 @@ class BusinessLogic
     public BusinessLogic()
     {
         ProductsParser parser = new ProductsParser("produkte.yml");
-        products = parser.ReadProducts();
+        products = parser.ExtractProductsFromYAML();
     }
 
     public Trader CreateTrader(int position, UserInterface ui)
@@ -90,14 +90,12 @@ class BusinessLogic
     public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
         int totalCost = quantity * selectedProduct.BasePrice;
-
         if (!IsSufficientBalanceForPurchase(trader, totalCost) ||
             !HasSufficientStorageForPurchase(trader, selectedProduct, quantity) ||
             !IsProductAvailableInRequiredQuantity(selectedProduct, quantity))
         {
             return;
         }
-
         UpdateTraderStatus(trader, selectedProduct, quantity, totalCost);
         UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
@@ -133,10 +131,8 @@ class BusinessLogic
         {
             return;
         }
-
         UpdateTraderStatusAfterSale(trader, selectedProduct, quantityToSell);
         UpdateOwnedProductsAfterSale(trader, selectedProduct);
-
         UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
 
@@ -295,30 +291,6 @@ class BusinessLogic
         int storageCosts = (usedStorage * 5) + (freeStorage * 1);
         trader.AccountBalance -= storageCosts;
     }
-
-    /*     public void CheckForBankruptcy(List<Trader> traders)
-        {
-            List<Trader> tradersToRemove = new List<Trader>();
-            foreach (var trader in traders)
-            {
-                if (trader.AccountBalance < 0)
-                {
-                    UserInterface.ShowError($"Zwischenhändler {trader.Name} ist bankrott gegangen.");
-                    tradersToRemove.Add(trader);
-                }
-            }
-
-            foreach (var trader in tradersToRemove)
-            {
-                traders.Remove(trader);
-            }
-
-            if (traders.Count == 0)
-            {
-                UserInterface.ShowError("Alle Zwischenhändler sind bankrott. Die Simulation wird beendet.");
-                Environment.Exit(0);
-            }
-        } */
 
     private List<Trader> IdentifyBankruptTraders(List<Trader> traders)
     {

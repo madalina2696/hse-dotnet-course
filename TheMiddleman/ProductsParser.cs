@@ -37,7 +37,7 @@ class ProductsParser
         return int.Parse(line.Substring(20));
     }
 
-    public List<Product> ReadProducts()
+    public List<Product> ExtractProductsFromYAML()
     {
         string[] lines = File.ReadAllLines(_filePath);
         List<Product> products = new List<Product>();

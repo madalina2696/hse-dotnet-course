@@ -58,21 +58,15 @@ class UserInterface
     }
     public void DisplayTraderStatus(Trader trader, int currentDay, int usedStorage)
     {
-        
         string traderInfo = $"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}";
         int dynamicWidth = Math.Max(80, traderInfo.Length + 2);
-
         string border = new string('-', dynamicWidth);
         string sideBorder = "|";
-
         string paddedInfo = traderInfo.PadLeft((dynamicWidth - 2 + traderInfo.Length) / 2).PadRight(dynamicWidth - 2);
-
         Console.WriteLine("\n" + border);
         Console.WriteLine(sideBorder + paddedInfo + sideBorder);
         Console.WriteLine(border + "\n");
     }
-
-
 
     public string ReadProductName(string line)
     {
@@ -135,18 +129,14 @@ class UserInterface
         Console.ForegroundColor = ConsoleColor.Blue;
         Console.WriteLine("\nVerfügbare Produkte:\n");
         Console.ResetColor();
-
         Console.WriteLine($"{"ID",-10} {"Name",-25} {"Haltbarkeit",-15} {"Verfügbare Menge",-20} {"Preis pro Stück",-20}");
         Console.WriteLine(new string('-', 90));
-
         foreach (Product product in businessLogic.GetProducts())
         {
             Console.WriteLine($"{product.Id,-10} {product.Name,-25} {product.Durability + " Tage",-15} {product.Availability,-20} {"$" + product.BuyingPrice,-20}");
         }
-
         Console.WriteLine("\nz) Zurück");
     }
-
 
     private Product? GetUserSelectedProduct(Trader trader)
     {
