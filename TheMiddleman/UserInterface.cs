@@ -154,7 +154,7 @@ class UserInterface
         return businessLogic.GetProducts().Find(p => p.Id == selectedProductId);
     }
 
-    private void ProcessPurchase(Trader trader, Product? selectedProduct)
+    private void ConductProductPurchase(Trader trader, Product? selectedProduct)
     {
         if (selectedProduct == null)
         {
@@ -173,7 +173,7 @@ class UserInterface
     {
         ShowShoppingMenuOptions();
         Product? selectedProduct = GetUserSelectedProduct(trader);
-        ProcessPurchase(trader, selectedProduct);
+        ConductProductPurchase(trader, selectedProduct);
     }
 
     private void ShowSellingMenuOptions(Trader trader)
@@ -206,7 +206,7 @@ class UserInterface
         return -2;
     }
 
-    private void ProcessSale(Trader trader, int selectedProductIndex)
+    private void ExecuteProductSale(Trader trader, int selectedProductIndex)
     {
         if (selectedProductIndex <= 0 || selectedProductIndex > trader.OwnedProducts.Count)
         {
@@ -238,7 +238,7 @@ class UserInterface
             ShowSellingMenu(trader);
             return;
         }
-        ProcessSale(trader, selectedProductIndex);
+        ExecuteProductSale(trader, selectedProductIndex);
     }
 
     private void ShowStorageUpgradeInformation()
