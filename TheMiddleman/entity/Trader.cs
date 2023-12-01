@@ -2,15 +2,15 @@ using System.Collections.Generic;
 
 namespace TheMiddleman.Entity
 {
-    public class Intermediary
+    public class Trader
     {
-        public Intermediary(string name, string company, int accountBalance)
+        public int StorageCapacity { get; set; } = 100;
+        public Trader(string name, string company, int accountBalance)
         {
             Name = name;
             Company = company;
             AccountBalance = accountBalance;
         }
-
         public string? Name { get; set; }
         public string? Company { get; set; }
         public int AccountBalance { get; set; }
