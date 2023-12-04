@@ -180,6 +180,7 @@ class BusinessLogic
     {
         ProcessBankruptcies(traders);
         UpdateProducts(currentDay);
+
         foreach (Trader trader in traders)
         {
             if (currentDay > 1)
@@ -190,6 +191,7 @@ class BusinessLogic
             }
             ui.DisplayOptions(trader, ref currentDay);
         }
+
         RotateTraders(traders);
         currentDay++;
     }

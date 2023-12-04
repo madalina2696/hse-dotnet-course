@@ -308,7 +308,7 @@ class UserInterface
 
     public void DisplayDailyReport(Trader trader)
     {
-        Console.WriteLine("Tagesbericht für " + trader.Name);
+        Console.WriteLine("\nTagesbericht für " + trader.Name);
         Console.WriteLine("Kontostand zu Beginn des letzten Tages: $" + trader.StartingBalance);
         Console.WriteLine("Ausgaben für Einkäufe: $" + trader.Expenses);
         Console.WriteLine("Einnahmen aus Verkäufen: $" + trader.Revenue);
