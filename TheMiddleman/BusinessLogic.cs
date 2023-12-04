@@ -89,17 +89,24 @@ class BusinessLogic
 
     public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
-        int totalCost = quantity * selectedProduct.BasePrice;
-        if (!IsSufficientBalanceForPurchase(trader, totalCost) &&
-            !HasSufficientStorageForPurchase(trader, selectedProduct, quantity) &&
+        decimal discount = trader.ProductDiscounts.ContainsKey(selectedProduct) ? trader.ProductDiscounts[selectedProduct] : 0m;
+        int discountedPrice = (int)(selectedProduct.BasePrice * (1 - discount));
+        int totalCost = quantity * discountedPrice;
+
+        if (!IsSufficientBalanceForPurchase(trader, totalCost) ||
+            !HasSufficientStorageForPurchase(trader, selectedProduct, quantity) ||
             !IsProductAvailableInRequiredQuantity(selectedProduct, quantity))
         {
             return;
         }
-        trader.UpdateExpenses(totalCost);
+
         UpdateTraderStatus(trader, selectedProduct, quantity, totalCost);
+        trader.UpdateExpenses(totalCost);
+        trader.CalculateDiscountsForAllProducts(this.products);
+
         UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
+
 
     private bool IsProductAvailableForSale(Trader trader, Product selectedProduct, int quantityToSell)
     {
@@ -132,9 +139,13 @@ class BusinessLogic
         {
             return;
         }
-        trader.UpdateRevenue(quantityToSell * selectedProduct.SellingPrice);
+
+        int saleRevenue = quantityToSell * selectedProduct.SellingPrice;
+        trader.UpdateRevenue(saleRevenue);
         UpdateTraderStatusAfterSale(trader, selectedProduct, quantityToSell);
         UpdateOwnedProductsAfterSale(trader, selectedProduct);
+        trader.CalculateDiscountsForAllProducts(this.products);
+
         UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
     }
 
@@ -183,6 +194,7 @@ class BusinessLogic
 
         foreach (Trader trader in traders)
         {
+            trader.CalculateDiscountsForAllProducts(products);
             if (currentDay > 1)
             {
                 ApplyStorageCosts(trader);

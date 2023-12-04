@@ -124,16 +124,20 @@ class UserInterface
         }
     }
 
-    private void ShowShoppingMenuOptions()
+    private void ShowShoppingMenuOptions(Trader trader)
     {
         Console.ForegroundColor = ConsoleColor.Blue;
         Console.WriteLine("\nVerfügbare Produkte:\n");
         Console.ResetColor();
-        Console.WriteLine($"{"ID",-10} {"Name",-25} {"Haltbarkeit",-15} {"Verfügbare Menge",-20} {"Preis pro Stück",-20}");
-        Console.WriteLine(new string('-', 90));
+        Console.WriteLine($"{"ID",-10} {"Name",-25} {"Haltbarkeit",-15} {"Verfügbare Menge",-20} {"Preis pro Stück (Rabatt)",-30}");
+        Console.WriteLine(new string('-', 100));
+
         foreach (Product product in businessLogic.GetProducts())
         {
-            Console.WriteLine($"{product.Id,-10} {product.Name,-25} {product.Durability + " Tage",-15} {product.Availability,-20} {"$" + product.BuyingPrice,-20}");
+            decimal discount = trader.ProductDiscounts.ContainsKey(product) ? trader.ProductDiscounts[product] : 0m;
+            int discountedPrice = (int)(product.BasePrice * (1 - discount));
+            string priceWithDiscount = $"${discountedPrice} ({discount:P})";
+            Console.WriteLine($"{product.Id,-10} {product.Name,-25} {product.Durability + " Tage",-15} {product.Availability,-20} {priceWithDiscount,-30}");
         }
         Console.WriteLine("\nz) Zurück");
     }
@@ -171,7 +175,7 @@ class UserInterface
 
     public void ShowShoppingMenu(Trader trader)
     {
-        ShowShoppingMenuOptions();
+        ShowShoppingMenuOptions(trader);
         Product? selectedProduct = GetUserSelectedProduct(trader);
         ConductProductPurchase(trader, selectedProduct);
     }
