@@ -224,7 +224,7 @@ class UserInterface
             ShowError("Ungültige Menge.");
             return;
         }
-        businessLogic.Sale(trader, selectedProduct, quantityToSell);
+        businessLogic.Sell(trader, selectedProduct, quantityToSell);
     }
 
     public void ShowSellingMenu(Trader trader)
@@ -305,6 +305,19 @@ class UserInterface
             rank++;
         }
     }
+
+    public void DisplayDailyReport(Trader trader)
+    {
+        Console.WriteLine("Tagesbericht für " + trader.Name);
+        Console.WriteLine("Kontostand zu Beginn des letzten Tages: $" + trader.StartingBalance);
+        Console.WriteLine("Ausgaben für Einkäufe: $" + trader.Expenses);
+        Console.WriteLine("Einnahmen aus Verkäufen: $" + trader.Revenue);
+        Console.WriteLine("Angefallene Lagerkosten: $" + trader.StorageCosts);
+        Console.WriteLine("Aktueller Kontostand: $" + trader.AccountBalance);
+        Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
+        Console.ReadLine();
+    }
+
 
     public static void ShowError(string message)
     {
