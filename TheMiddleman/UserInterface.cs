@@ -58,7 +58,7 @@ class UserInterface
     }
     public void DisplayTraderStatus(Trader trader, int currentDay, int usedStorage)
     {
-        string traderInfo = $"{trader.Name} von {trader.Company} | ${trader.AccountBalance} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}";
+        string traderInfo = $"{trader.Name} von {trader.Company} | ${trader.AccountBalance.ToString("F2")} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}";
         int dynamicWidth = Math.Max(80, traderInfo.Length + 2);
         string border = new string('-', dynamicWidth);
         string sideBorder = "|";
@@ -129,18 +129,19 @@ class UserInterface
         Console.ForegroundColor = ConsoleColor.Blue;
         Console.WriteLine("\nVerfügbare Produkte:\n");
         Console.ResetColor();
-        Console.WriteLine($"{"ID",-10} {"Name",-25} {"Haltbarkeit",-15} {"Verfügbare Menge",-20} {"Preis pro Stück (Rabatt)",-30}");
-        Console.WriteLine(new string('-', 100));
-
+        Console.WriteLine($"{"ID",-10} {"Name",-25} {"Haltbarkeit",-15} {"Verfügbare Menge",-20} {"Preis pro Stück",-20} {"Rabatt",-10}");
+        Console.WriteLine(new string('-', 105));
         foreach (Product product in businessLogic.GetProducts())
         {
-            decimal discount = trader.ProductDiscounts.ContainsKey(product) ? trader.ProductDiscounts[product] : 0m;
-            int discountedPrice = (int)(product.BasePrice * (1 - discount));
-            string priceWithDiscount = $"${discountedPrice} ({discount:P})";
-            Console.WriteLine($"{product.Id,-10} {product.Name,-25} {product.Durability + " Tage",-15} {product.Availability,-20} {priceWithDiscount,-30}");
+            double discount = trader.ProductDiscounts.ContainsKey(product) ? trader.ProductDiscounts[product] : 0;
+            double discountedPrice = product.BuyingPrice * (1 - discount);
+            string priceWithDiscount = $"${discountedPrice:F2}";
+            string discountPercentage = $"({discount:P2})";
+            Console.WriteLine($"{product.Id,-10} {product.Name,-25} {product.Durability + " Tage",-15} {product.Availability,-20} {priceWithDiscount,-20} {discountPercentage,-10}");
         }
         Console.WriteLine("\nz) Zurück");
     }
+
 
     private Product? GetUserSelectedProduct(Trader trader)
     {
@@ -190,7 +191,7 @@ class UserInterface
         int index = 1;
         foreach (var entry in trader.OwnedProducts)
         {
-            Console.WriteLine($"{index,-10} {entry.Key.Name,-25} {entry.Value,-20} {"$" + entry.Key.SellingPrice,-20}");
+            Console.WriteLine($"{index,-10} {entry.Key.Name,-25} {entry.Value,-20} ${entry.Key.SellingPrice.ToString("F2"),-20}");
             index++;
         }
         Console.WriteLine("\nz) Zurück");
@@ -247,7 +248,7 @@ class UserInterface
 
     private void ShowStorageUpgradeInformation()
     {
-        Console.WriteLine("\nUm wie viele Einheiten möchten Sie das Lager vergrößern? Kosten: $50 pro Einheit.");
+        Console.WriteLine("\nUm wie viele Einheiten möchten Sie das Lager vergrößern? Kosten: $50.00 pro Einheit.");
     }
 
     private int GetStorageUpgradeAmount()
@@ -305,7 +306,7 @@ class UserInterface
         Console.WriteLine("Rangliste der Zwischenhändler am Ende der Simulation:");
         foreach (var trader in sortedTraders)
         {
-            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance}");
+            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
             rank++;
         }
     }
@@ -313,11 +314,11 @@ class UserInterface
     public void DisplayDailyReport(Trader trader)
     {
         Console.WriteLine("\nTagesbericht für " + trader.Name);
-        Console.WriteLine("Kontostand zu Beginn des letzten Tages: $" + trader.StartingBalance);
-        Console.WriteLine("Ausgaben für Einkäufe: $" + trader.Expenses);
-        Console.WriteLine("Einnahmen aus Verkäufen: $" + trader.Revenue);
-        Console.WriteLine("Angefallene Lagerkosten: $" + trader.StorageCosts);
-        Console.WriteLine("Aktueller Kontostand: $" + trader.AccountBalance);
+        Console.WriteLine("Kontostand zu Beginn des letzten Tages: $" + trader.StartingBalance.ToString("F2"));
+        Console.WriteLine("Ausgaben für Einkäufe: $" + trader.Expenses.ToString("F2"));
+        Console.WriteLine("Einnahmen aus Verkäufen: $" + trader.Revenue.ToString("F2"));
+        Console.WriteLine("Angefallene Lagerkosten: $" + trader.StorageCosts.ToString("F2"));
+        Console.WriteLine("Aktueller Kontostand: $" + trader.AccountBalance.ToString("F2"));
         Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
         Console.ReadLine();
     }

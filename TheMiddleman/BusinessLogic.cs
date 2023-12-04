@@ -17,11 +17,11 @@ class BusinessLogic
     {
         string traderName = ui.ReadTraderNameAtPosition(position);
         string firmName = ui.FetchFirmName(traderName);
-        int initialBalance = GetInitialBalance(ui);
+        double initialBalance = GetInitialBalance(ui);
         return new Trader(traderName, firmName, initialBalance);
     }
 
-    private int GetInitialBalance(UserInterface ui)
+    private double GetInitialBalance(UserInterface ui)
     {
         return ui.AssignStartingBalance(ui.AskForDifficultyLevel());
     }
@@ -42,7 +42,7 @@ class BusinessLogic
         return new Product { Id = id, Name = name, Durability = durability };
     }
 
-    private bool IsSufficientBalanceForPurchase(Trader trader, int totalCost)
+    private bool IsSufficientBalanceForPurchase(Trader trader, double totalCost)
     {
         if (trader.AccountBalance < totalCost)
         {
@@ -52,7 +52,7 @@ class BusinessLogic
         return true;
     }
 
-    private bool HasSufficientStorageForPurchase(Trader trader, Product selectedProduct, int quantity)
+    private bool HasSufficientStorageForPurchase(Trader trader, int quantity)
     {
         int usedStorage = CalculateUsedStorage(trader);
         if (usedStorage + quantity > trader.StorageCapacity)
@@ -73,7 +73,7 @@ class BusinessLogic
         return true;
     }
 
-    private void UpdateTraderStatus(Trader trader, Product selectedProduct, int quantity, int totalCost)
+    private void UpdateTraderStatus(Trader trader, Product selectedProduct, int quantity, double totalCost)
     {
         trader.AccountBalance -= totalCost;
         if (trader.OwnedProducts.ContainsKey(selectedProduct))
@@ -89,24 +89,20 @@ class BusinessLogic
 
     public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
-        decimal discount = trader.ProductDiscounts.ContainsKey(selectedProduct) ? trader.ProductDiscounts[selectedProduct] : 0m;
-        int discountedPrice = (int)(selectedProduct.BasePrice * (1 - discount));
-        int totalCost = quantity * discountedPrice;
-
+        double discount = trader.ProductDiscounts.ContainsKey(selectedProduct) ? trader.ProductDiscounts[selectedProduct] : 0;
+        double discountedPrice = selectedProduct.BuyingPrice * (1 - discount);
+        double totalCost = quantity * discountedPrice;
         if (!IsSufficientBalanceForPurchase(trader, totalCost) ||
-            !HasSufficientStorageForPurchase(trader, selectedProduct, quantity) ||
+            !HasSufficientStorageForPurchase(trader, quantity) ||
             !IsProductAvailableInRequiredQuantity(selectedProduct, quantity))
         {
             return;
         }
-
         UpdateTraderStatus(trader, selectedProduct, quantity, totalCost);
         trader.UpdateExpenses(totalCost);
-        trader.CalculateDiscountsForAllProducts(this.products);
-
-        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+        trader.CalculateDiscountsForAllProducts(products);
+        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
-
 
     private bool IsProductAvailableForSale(Trader trader, Product selectedProduct, int quantityToSell)
     {
@@ -120,7 +116,7 @@ class BusinessLogic
 
     private void UpdateTraderStatusAfterSale(Trader trader, Product selectedProduct, int quantityToSell)
     {
-        int saleRevenue = quantityToSell * selectedProduct.SellingPrice;
+        double saleRevenue = quantityToSell * selectedProduct.SellingPrice;
         trader.AccountBalance += saleRevenue;
         trader.OwnedProducts[selectedProduct] -= quantityToSell;
     }
@@ -139,14 +135,12 @@ class BusinessLogic
         {
             return;
         }
-
-        int saleRevenue = quantityToSell * selectedProduct.SellingPrice;
+        double saleRevenue = quantityToSell * selectedProduct.SellingPrice;
         trader.UpdateRevenue(saleRevenue);
         UpdateTraderStatusAfterSale(trader, selectedProduct, quantityToSell);
         UpdateOwnedProductsAfterSale(trader, selectedProduct);
-        trader.CalculateDiscountsForAllProducts(this.products);
-
-        UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance}");
+        trader.CalculateDiscountsForAllProducts(products);
+        UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
 
     public void MoveFirstTraderToEnd(List<Trader> traders)
@@ -173,15 +167,6 @@ class BusinessLogic
         }
     }
 
-    private void InteractWithTraders(List<Trader> traders, UserInterface ui, ref int currentDay)
-    {
-        foreach (Trader trader in traders)
-        {
-            ui.DisplayOptions(trader, ref currentDay);
-            ApplyStorageCosts(trader);
-        }
-    }
-
     private void RotateTraders(List<Trader> traders)
     {
         MoveFirstTraderToEnd(traders);
@@ -191,7 +176,6 @@ class BusinessLogic
     {
         ProcessBankruptcies(traders);
         UpdateProducts(currentDay);
-
         foreach (Trader trader in traders)
         {
             trader.CalculateDiscountsForAllProducts(products);
@@ -203,11 +187,9 @@ class BusinessLogic
             }
             ui.DisplayOptions(trader, ref currentDay);
         }
-
         RotateTraders(traders);
         currentDay++;
     }
-
 
     public void UpdateProductAvailability()
     {
@@ -246,7 +228,7 @@ class BusinessLogic
             }
             newBuyingPrice = Math.Max(newBuyingPrice, product.BasePrice * 0.25);
             newBuyingPrice = Math.Min(newBuyingPrice, product.BasePrice * 3);
-            product.BuyingPrice = (int)newBuyingPrice;
+            product.BuyingPrice = newBuyingPrice;
         }
     }
 
@@ -260,19 +242,16 @@ class BusinessLogic
         return usedStorage;
     }
 
-    public int CalculateStorageCosts(Trader trader)
+    public double CalculateStorageCosts(Trader trader)
     {
-        int costPerOccupiedUnit = 5;
-        int costPerEmptyUnit = 1;
+        double costPerOccupiedUnit = 5;
+        double costPerEmptyUnit = 1;
         int usedStorage = CalculateUsedStorage(trader);
         int emptyStorage = trader.StorageCapacity - usedStorage;
-
-        int occupiedStorageCosts = usedStorage * costPerOccupiedUnit;
-        int emptyStorageCosts = emptyStorage * costPerEmptyUnit;
-
+        double occupiedStorageCosts = usedStorage * costPerOccupiedUnit;
+        double emptyStorageCosts = emptyStorage * costPerEmptyUnit;
         return occupiedStorageCosts + emptyStorageCosts;
     }
-
 
     private bool IsUpgradeAmountValid(int increaseAmount)
     {
@@ -284,7 +263,7 @@ class BusinessLogic
         return true;
     }
 
-    private bool HasSufficientFundsForUpgrade(Trader trader, int upgradeCost)
+    private bool HasSufficientFundsForUpgrade(Trader trader, double upgradeCost)
     {
         if (trader.AccountBalance < upgradeCost)
         {
@@ -294,15 +273,15 @@ class BusinessLogic
         return true;
     }
 
-    private void ApplyStorageUpgrade(Trader trader, int increaseAmount, int upgradeCost)
+    private void ApplyStorageUpgrade(Trader trader, int increaseAmount, double upgradeCost)
     {
         trader.StorageCapacity += increaseAmount;
         trader.AccountBalance -= upgradeCost;
     }
 
-    private void DisplayUpgradeSuccessMessage(int increaseAmount, int upgradeCost)
+    private void DisplayUpgradeSuccessMessage(int increaseAmount, double upgradeCost)
     {
-        UserInterface.ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.");
+        UserInterface.ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.00.");
     }
 
     public bool UpgradeStorageCapacity(Trader trader, int increaseAmount)
@@ -311,16 +290,13 @@ class BusinessLogic
         {
             return false;
         }
-
-        int upgradeCost = increaseAmount * 50;
+        double upgradeCost = increaseAmount * 50;
         if (!HasSufficientFundsForUpgrade(trader, upgradeCost))
         {
             return false;
         }
-
         ApplyStorageUpgrade(trader, increaseAmount, upgradeCost);
         DisplayUpgradeSuccessMessage(increaseAmount, upgradeCost);
-
         return true;
     }
 
@@ -328,7 +304,7 @@ class BusinessLogic
     {
         int usedStorage = CalculateUsedStorage(trader);
         int emptyStorage = trader.StorageCapacity - usedStorage;
-        int storageCosts = (usedStorage * 5) + (emptyStorage * 1);
+        double storageCosts = (usedStorage * 5) + (emptyStorage * 1);
         trader.UpdateStorageCosts(storageCosts);
         trader.AccountBalance -= storageCosts;
     }
