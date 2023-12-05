@@ -322,41 +322,6 @@ class UserInterface
         ReadDurationInput();
     }
 
-    /* public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
-    {
-        var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
-        var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
-        int rank = 1;
-        Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
-        Console.ResetColor();
-        foreach (var trader in sortedTraders)
-        {
-            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
-            rank++;
-        }
-        if (!bankruptTraders.Any())
-        {
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
-            Console.ResetColor();
-        }
-        else
-        {
-            foreach (var trader in bankruptTraders)
-            {
-                if (trader.AccountBalance < 0)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("\nBankrotte Zwischenhändler:\n");
-                    Console.ResetColor();
-                    Console.WriteLine($"Zwischenhändler {trader.Name}");
-                }
-                rank++;
-            }
-        }
-    } */
-
     public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
     {
         var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
@@ -387,7 +352,6 @@ class UserInterface
             Console.ResetColor();
         }
     }
-
 
     public void DisplayDailyReport(Trader trader)
     {
