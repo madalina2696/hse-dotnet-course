@@ -1,3 +1,4 @@
+using Spectre.Console;
 using TheMiddleman.Entity;
 
 class UserInterface
@@ -386,12 +387,22 @@ class UserInterface
         ShowTradersCreation(ReadParticipantCount());
         while (businessLogic.GetCurrentDay() <= businessLogic.GetSimulationDuration())
         {
+            ShowCurrentDay();
             businessLogic.RunDayCycle();
             if (businessLogic.GetCurrentDay() > businessLogic.GetSimulationDuration())
             {
                 break;
             }
         }
+    }
+
+    private void ShowCurrentDay()
+    {
+        Console.WriteLine("\n");
+        var rule = new Rule($"Tag {businessLogic.GetCurrentDay()}");
+        rule.RuleStyle("darkred_1");
+        rule.Justification = Justify.Left;
+        AnsiConsole.Write(rule);
     }
 
     private void ShowTradersCreation(int numberOfTraders)

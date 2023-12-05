@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "ZfEHZ28W8qc+OF4EXB8DIA8T9612Owtwlmg2NdID6Oj6Zh6QWC+F/VRrD3kKFSwXeAs5RfgfJy1dh4g5VXSW7Q==",
+  "dgSpecHash": "h0LMHfIV2gpJTsk4kh2fYULRyY9v1W78T8kdnIZNokD4vw1rlAty62/Ua0aw3dWcExZlMfTBPDxt+s7UiraHbQ==",
   "success": true,
   "projectFilePath": "/workspaces/hse-dotnet-course/TheMiddleman/TheMiddleman.csproj",
   "expectedPackageFiles": [
@@ -12,6 +12,8 @@
     "/home/codespace/.nuget/packages/nuget.frameworks/6.5.0/nuget.frameworks.6.5.0.nupkg.sha512",
     "/home/codespace/.nuget/packages/nunit/4.0.1/nunit.4.0.1.nupkg.sha512",
     "/home/codespace/.nuget/packages/nunit3testadapter/4.5.0/nunit3testadapter.4.5.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/spectre.console/0.48.0/spectre.console.0.48.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/system.memory/4.5.5/system.memory.4.5.5.nupkg.sha512",
     "/home/codespace/.nuget/packages/system.reflection.metadata/1.6.0/system.reflection.metadata.1.6.0.nupkg.sha512"
   ],
   "logs": []

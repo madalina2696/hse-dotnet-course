@@ -98,3 +98,4 @@
 /workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/zh-Hant/Microsoft.TestPlatform.CrossPlatEngine.resources.dll
 /workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/zh-Hant/Microsoft.VisualStudio.TestPlatform.Common.resources.dll
 /workspaces/hse-dotnet-course/TheMiddleman/obj/Debug/net7.0/TheMiddleman.csproj.CopyComplete
+/workspaces/hse-dotnet-course/TheMiddleman/bin/Debug/net7.0/Spectre.Console.dll
