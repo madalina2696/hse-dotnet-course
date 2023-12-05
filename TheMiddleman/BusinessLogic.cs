@@ -1,64 +1,51 @@
-using System;
-using System.Collections.Generic;
 using TheMiddleman.Entity;
 
 class BusinessLogic
 {
     private Random random = new Random();
-    private List<Product> products;
+    private List<Product>? products;
+    private List<Trader>? traders;
+    public Action<Trader, int> OnDayChange { get; set; } = delegate { };
+    public Action<Trader> OnBankruptcy { get; set; } = delegate { };
+    public Action<List<Trader>> OnSimulationEnd { get; set; } = delegate { };
+    private int simulationDuration;
 
-    public BusinessLogic()
+    public BusinessLogic() { }
+
+    public void Initialize()
     {
         ProductsParser parser = new ProductsParser("produkte.yml");
+        products = new List<Product>();
+        traders = new List<Trader>();
         products = parser.ExtractProductsFromYAML();
     }
 
-    public Trader CreateTrader(int position, UserInterface ui)
+    public void CreateTrader(string traderName, string firmName, double initialBalance)
     {
-        string traderName = ui.ReadTraderNameAtPosition(position);
-        string firmName = ui.FetchFirmName(traderName);
-        double initialBalance = GetInitialBalance(ui);
-        return new Trader(traderName, firmName, initialBalance);
-    }
-
-    private double GetInitialBalance(UserInterface ui)
-    {
-        return ui.AssignStartingBalance(ui.AskForDifficultyLevel());
-    }
-
-    public List<Trader> CreateTraders(UserInterface ui)
-    {
-        List<Trader> participants = new List<Trader>();
-        int traderCount = ui.ReadParticipantCount();
-        for (int i = 1; i <= traderCount; i++)
+        if (traders == null)
         {
-            participants.Add(CreateTrader(i, ui));
+            throw new NullReferenceException("traders is null");
         }
-        return participants;
-    }
-
-    public Product CreateProduct(int id, string name, int durability)
-    {
-        return new Product { Id = id, Name = name, Durability = durability };
+        else
+        {
+            traders.Add(new Trader(traderName, firmName, initialBalance));
+        }
     }
 
     private bool IsSufficientBalanceForPurchase(Trader trader, double totalCost)
     {
         if (trader.AccountBalance < totalCost)
         {
-            UserInterface.ShowError("Nicht genügend Geld vorhanden.");
-            return false;
+            throw new BalanceException("Nicht genügend Geld vorhanden.");
         }
         return true;
     }
 
     private bool HasSufficientStorageForPurchase(Trader trader, int quantity)
     {
-        int usedStorage = CalculateUsedStorage(trader);
-        if (usedStorage + quantity > trader.StorageCapacity)
+        if (CalculateUsedStorage(trader) + quantity > trader.StorageCapacity)
         {
-            UserInterface.ShowError("Nicht genug Lagerplatz verfügbar.");
-            return false;
+            throw new StorageException("Nicht genug Lagerplatz verfügbar.");
         }
         return true;
     }
@@ -67,8 +54,7 @@ class BusinessLogic
     {
         if (selectedProduct.Availability < quantity)
         {
-            UserInterface.ShowError("Nicht genügend Produkte verfügbar.");
-            return false;
+            throw new ProductException("Nicht genügend Produkte verfügbar.");
         }
         return true;
     }
@@ -92,6 +78,18 @@ class BusinessLogic
         double discount = trader.ProductDiscounts.ContainsKey(selectedProduct) ? trader.ProductDiscounts[selectedProduct] : 0;
         double discountedPrice = selectedProduct.BuyingPrice * (1 - discount);
         double totalCost = quantity * discountedPrice;
+        try
+        {
+            ValidatePurchase(trader, selectedProduct, quantity, totalCost);
+        }
+        catch (BalanceException) { throw new BalanceException("Nicht genügend Geld vorhanden."); }
+        catch (StorageException) { throw new StorageException("Nicht genug Lagerplatz verfügbar."); }
+        catch (ProductException) { throw new ProductException("Nicht genügend Produkte verfügbar."); }
+        catch (UserInputException) { throw new UserInputException("Ungültige Eingabe."); }
+    }
+
+    private void ValidatePurchase(Trader trader, Product selectedProduct, int quantity, double totalCost)
+    {
         if (!IsSufficientBalanceForPurchase(trader, totalCost) ||
             !HasSufficientStorageForPurchase(trader, quantity) ||
             !IsProductAvailableInRequiredQuantity(selectedProduct, quantity))
@@ -100,16 +98,15 @@ class BusinessLogic
         }
         UpdateTraderStatus(trader, selectedProduct, quantity, totalCost);
         trader.UpdateExpenses(totalCost);
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
         trader.CalculateDiscountsForAllProducts(products);
-        UserInterface.ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
 
     private bool IsProductAvailableForSale(Trader trader, Product selectedProduct, int quantityToSell)
     {
         if (!trader.OwnedProducts.ContainsKey(selectedProduct) || trader.OwnedProducts[selectedProduct] < quantityToSell)
         {
-            UserInterface.ShowError("Nicht genügend Ware vorhanden.");
-            return false;
+            throw new ProductException("Nicht genügend Ware vorhanden.");
         }
         return true;
     }
@@ -131,16 +128,17 @@ class BusinessLogic
 
     public void Sell(Trader trader, Product selectedProduct, int quantityToSell)
     {
+        if (quantityToSell <= 0) { throw new ProductException("Ungültige Menge."); }
         if (!IsProductAvailableForSale(trader, selectedProduct, quantityToSell))
         {
-            return;
+            throw new ProductException("Nicht genügend Ware vorhanden.");
         }
         double saleRevenue = quantityToSell * selectedProduct.SellingPrice;
         trader.UpdateRevenue(saleRevenue);
         UpdateTraderStatusAfterSale(trader, selectedProduct, quantityToSell);
         UpdateOwnedProductsAfterSale(trader, selectedProduct);
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
         trader.CalculateDiscountsForAllProducts(products);
-        UserInterface.ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
 
     public void MoveFirstTraderToEnd(List<Trader> traders)
@@ -155,7 +153,9 @@ class BusinessLogic
 
     private void ProcessBankruptcies(List<Trader> traders)
     {
-        CheckForBankruptcy(traders);
+        List<Trader> tradersToRemove = IdentifyBankruptTraders(traders);
+        RemoveBankruptTraders(traders, tradersToRemove);
+        TerminateSimulationIfAllBankrupt(traders);
     }
 
     private void UpdateProducts(int currentDay)
@@ -172,27 +172,27 @@ class BusinessLogic
         MoveFirstTraderToEnd(traders);
     }
 
-    public void RunDayCycle(List<Trader> traders, UserInterface ui, ref int currentDay)
+    public void RunDayCycle(ref int currentDay)
     {
-        ProcessBankruptcies(traders);
+        if (traders == null) { throw new NullReferenceException("Zwischenhändlerliste ist null."); }
         UpdateProducts(currentDay);
         foreach (Trader trader in traders)
         {
-            trader.CalculateDiscountsForAllProducts(products);
+            trader.CalculateDiscountsForAllProducts(GetProducts());
             if (currentDay > 1)
             {
                 ApplyStorageCosts(trader);
-                ui.DisplayDailyReport(trader);
-                trader.ResetDailyFinances();
             }
-            ui.DisplayOptions(trader, ref currentDay);
+            OnDayChange.Invoke(trader, currentDay);
         }
         RotateTraders(traders);
+        ProcessBankruptcies(traders);
         currentDay++;
     }
 
     public void UpdateProductAvailability()
     {
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
         foreach (Product product in products)
         {
             int maxAvailability = product.MaxProductionRate * product.Durability;
@@ -205,6 +205,7 @@ class BusinessLogic
 
     public void UpdateProductPrices()
     {
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
         foreach (Product product in products)
         {
             double priceChangePercent;
@@ -242,24 +243,9 @@ class BusinessLogic
         return usedStorage;
     }
 
-    public double CalculateStorageCosts(Trader trader)
-    {
-        double costPerOccupiedUnit = 5;
-        double costPerEmptyUnit = 1;
-        int usedStorage = CalculateUsedStorage(trader);
-        int emptyStorage = trader.StorageCapacity - usedStorage;
-        double occupiedStorageCosts = usedStorage * costPerOccupiedUnit;
-        double emptyStorageCosts = emptyStorage * costPerEmptyUnit;
-        return occupiedStorageCosts + emptyStorageCosts;
-    }
-
     private bool IsUpgradeAmountValid(int increaseAmount)
     {
-        if (increaseAmount <= 0)
-        {
-            UserInterface.ShowError("Die Vergrößerung des Lagers wurde abgebrochen.");
-            return false;
-        }
+        if (increaseAmount <= 0) { throw new UserInputException("Ungültige Eingabe."); }
         return true;
     }
 
@@ -267,8 +253,7 @@ class BusinessLogic
     {
         if (trader.AccountBalance < upgradeCost)
         {
-            UserInterface.ShowError("Nicht genügend Geld für das Upgrade vorhanden.");
-            return false;
+            throw new BalanceException("Nicht genügend Geld für das Upgrade vorhanden.");
         }
         return true;
     }
@@ -279,24 +264,18 @@ class BusinessLogic
         trader.AccountBalance -= upgradeCost;
     }
 
-    private void DisplayUpgradeSuccessMessage(int increaseAmount, double upgradeCost)
-    {
-        UserInterface.ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${upgradeCost}.00.");
-    }
-
     public bool UpgradeStorageCapacity(Trader trader, int increaseAmount)
     {
         if (!IsUpgradeAmountValid(increaseAmount))
         {
-            return false;
+            throw new StorageException("Die Vergrößerung des Lagers wurde abgebrochen.");
         }
         double upgradeCost = increaseAmount * 50;
         if (!HasSufficientFundsForUpgrade(trader, upgradeCost))
         {
-            return false;
+            throw new BalanceException("Nicht genügend Geld für das Upgrade vorhanden.");
         }
         ApplyStorageUpgrade(trader, increaseAmount, upgradeCost);
-        DisplayUpgradeSuccessMessage(increaseAmount, upgradeCost);
         return true;
     }
 
@@ -316,7 +295,7 @@ class BusinessLogic
         {
             if (trader.AccountBalance < 0)
             {
-                UserInterface.ShowError($"Zwischenhändler {trader.Name} ist bankrott gegangen.");
+                OnBankruptcy.Invoke(trader);
                 tradersToRemove.Add(trader);
             }
         }
@@ -335,20 +314,23 @@ class BusinessLogic
     {
         if (traders.Count == 0)
         {
-            UserInterface.ShowError("Alle Zwischenhändler sind bankrott. Die Simulation wird beendet.");
-            Environment.Exit(0);
+            OnSimulationEnd.Invoke(traders);
         }
-    }
-
-    public void CheckForBankruptcy(List<Trader> traders)
-    {
-        List<Trader> tradersToRemove = IdentifyBankruptTraders(traders);
-        RemoveBankruptTraders(traders, tradersToRemove);
-        TerminateSimulationIfAllBankrupt(traders);
     }
 
     public List<Product> GetProducts()
     {
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
         return products;
+    }
+
+    public void SetSimulationDuration(int duration)
+    {
+        simulationDuration = duration;
+    }
+
+    internal int GetSimulationDuration()
+    {
+        return simulationDuration;
     }
 }

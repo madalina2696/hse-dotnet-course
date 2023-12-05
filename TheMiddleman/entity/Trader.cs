@@ -22,6 +22,7 @@ namespace TheMiddleman.Entity
             AccountBalance = accountBalance;
             StartingBalance = accountBalance;
         }
+
         public void UpdateExpenses(double amount)
         {
             Expenses += amount;

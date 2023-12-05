@@ -1,15 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using TheMiddleman.Entity;
 
 class UserInterface
 {
     private readonly BusinessLogic businessLogic;
 
-    public UserInterface(BusinessLogic? paramBusinessLogic)
+    public UserInterface(BusinessLogic paramBusinessLogic)
     {
-        businessLogic = paramBusinessLogic ?? throw new ArgumentNullException(nameof(paramBusinessLogic));
+        businessLogic = paramBusinessLogic;
+    }
+
+    public void Initialize()
+    {
+        businessLogic.OnDayChange += DisplayOptions;
+        businessLogic.OnBankruptcy += DisplayBankruptcy;
+        businessLogic.OnSimulationEnd += DisplayRanking;
+    }
+
+    private void DisplayBankruptcy(Trader trader)
+    {
+        ShowError($"Zwischenhändler {trader.Name} ist bankrott gegangen.");
     }
 
     public int ReadParticipantCount()
@@ -56,6 +65,7 @@ class UserInterface
                 return 10000;
         }
     }
+
     public void DisplayTraderStatus(Trader trader, int currentDay, int usedStorage)
     {
         string traderInfo = $"{trader.Name} von {trader.Company} | ${trader.AccountBalance.ToString("F2")} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}";
@@ -91,8 +101,10 @@ class UserInterface
         ProcessUserAction(userChoice, trader, ref endRound, currentDay);
     }
 
-    public void DisplayOptions(Trader trader, ref int currentDay)
+    public void DisplayOptions(Trader trader, int currentDay)
     {
+        DisplayDailyReport(trader);
+        trader.ResetDailyFinances();
         bool endRound = false;
         while (!endRound)
         {
@@ -142,7 +154,6 @@ class UserInterface
         Console.WriteLine("\nz) Zurück");
     }
 
-
     private Product? GetUserSelectedProduct(Trader trader)
     {
         string? userChoice = Console.ReadLine();
@@ -171,7 +182,15 @@ class UserInterface
         {
             return;
         }
-        businessLogic.Purchase(trader, selectedProduct, quantity);
+        try
+        {
+            businessLogic.Purchase(trader, selectedProduct, quantity);
+            ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
+        }
+        catch (Exception e)
+        {
+            ShowError(e.Message);
+        }
     }
 
     public void ShowShoppingMenu(Trader trader)
@@ -224,12 +243,8 @@ class UserInterface
         var availableQuantity = selectedEntry.Value;
         Console.WriteLine($"Wieviel von {selectedProduct.Name} verkaufen (max. {availableQuantity})?");
         int quantityToSell = int.Parse(Console.ReadLine() ?? "0");
-        if (quantityToSell <= 0 || quantityToSell > availableQuantity)
-        {
-            ShowError("Ungültige Menge.");
-            return;
-        }
         businessLogic.Sell(trader, selectedProduct, quantityToSell);
+        ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
 
     public void ShowSellingMenu(Trader trader)
@@ -265,9 +280,14 @@ class UserInterface
     {
         ShowStorageUpgradeInformation();
         int increaseAmount = GetStorageUpgradeAmount();
-        if (increaseAmount > 0)
+        try
         {
             businessLogic.UpgradeStorageCapacity(trader, increaseAmount);
+            ShowMessage($"Lager erfolgreich um {increaseAmount} Einheiten erweitert. Kosten: ${increaseAmount * 50}.00.");
+        }
+        catch (Exception e)
+        {
+            ShowError(e.Message);
         }
     }
 
@@ -276,27 +296,26 @@ class UserInterface
         Console.WriteLine("Wie viele Tage soll die Simulation laufen?");
     }
 
-    private int ReadDurationInput()
+    private void ReadDurationInput()
     {
         while (true)
         {
-            string input = Console.ReadLine() ?? "";
-            if (int.TryParse(input, out int duration) && duration > 0)
+            if (int.TryParse(Console.ReadLine(), out int duration) && duration > 0)
             {
-                return duration;
+                businessLogic.SetSimulationDuration(duration);
+                break;
             }
             else
             {
-
                 ShowError("Ungültige Eingabe.");
             }
         }
     }
 
-    public int ReadSimulationDuration()
+    public void ReadSimulationDuration()
     {
         AskSimulationDuration();
-        return ReadDurationInput();
+        ReadDurationInput();
     }
 
     public void DisplayRanking(List<Trader> traders)
@@ -323,7 +342,6 @@ class UserInterface
         Console.ReadLine();
     }
 
-
     public static void ShowError(string message)
     {
         Console.ForegroundColor = ConsoleColor.Red;
@@ -336,5 +354,28 @@ class UserInterface
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("\n" + message + "\n");
         Console.ResetColor();
+    }
+
+    public void StartSimulation()
+    {
+        ReadSimulationDuration();
+        Initialize();
+        ShowTradersCreation(ReadParticipantCount());
+        int currentDay = 1;
+        while (currentDay <= businessLogic.GetSimulationDuration())
+        {
+            businessLogic.RunDayCycle(ref currentDay);
+        }
+    }
+
+    private void ShowTradersCreation(int numberOfTraders)
+    {
+        for (int i = 0; i < numberOfTraders; i++)
+        {
+            string traderName = ReadTraderNameAtPosition(i + 1);
+            string firmName = FetchFirmName(traderName);
+            double startingBalance = AssignStartingBalance(AskForDifficultyLevel());
+            businessLogic.CreateTrader(traderName, firmName, startingBalance);
+        }
     }
 }
