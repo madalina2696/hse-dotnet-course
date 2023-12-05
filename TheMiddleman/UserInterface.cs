@@ -69,14 +69,16 @@ class UserInterface
 
     public void DisplayTraderStatus(Trader trader, int currentDay, int usedStorage)
     {
-        string traderInfo = $"{trader.Name} von {trader.Company} | ${trader.AccountBalance.ToString("F2")} | Lager: {usedStorage}/{trader.StorageCapacity} | Tag {currentDay}";
-        int dynamicWidth = Math.Max(80, traderInfo.Length + 2);
-        string border = new string('-', dynamicWidth);
-        string sideBorder = "|";
-        string paddedInfo = traderInfo.PadLeft((dynamicWidth - 2 + traderInfo.Length) / 2).PadRight(dynamicWidth - 2);
-        Console.WriteLine("\n" + border);
-        Console.WriteLine(sideBorder + paddedInfo + sideBorder);
-        Console.WriteLine(border + "\n");
+        var panel = new Panel(
+                   new Markup(
+                    $"[bold]Kontostand:[/] ${trader.AccountBalance.ToString("F2")}" + "  |  " +
+                       $"[bold]Lagerkapazität:[/] {usedStorage}/{trader.StorageCapacity}" + "  |  " +
+                       $"[bold]Tag:[/] {currentDay}"
+                   ))
+                   .Header($" {trader.Name} von {trader.Company} ")
+                   .Border(BoxBorder.Rounded)
+                   .BorderStyle(new Style(Color.Cyan1));
+        AnsiConsole.Write(panel);
     }
 
     public string ReadProductName(string line)
@@ -356,12 +358,19 @@ class UserInterface
 
     public void DisplayDailyReport(Trader trader)
     {
-        Console.WriteLine("\nTagesbericht für " + trader.Name);
-        Console.WriteLine("Kontostand zu Beginn des letzten Tages: $" + trader.StartingBalance.ToString("F2"));
-        Console.WriteLine("Ausgaben für Einkäufe: $" + trader.Expenses.ToString("F2"));
-        Console.WriteLine("Einnahmen aus Verkäufen: $" + trader.Revenue.ToString("F2"));
-        Console.WriteLine("Angefallene Lagerkosten: $" + trader.StorageCosts.ToString("F2"));
-        Console.WriteLine("Aktueller Kontostand: $" + trader.AccountBalance.ToString("F2"));
+        Console.WriteLine("\n");
+        var panel = new Panel(
+                new Markup(
+                    $"[bold]\nKontostand zu Beginn des letzten Tages:[/] {trader.StartingBalance.ToString("F2")}\n" +
+                    $"[bold]Ausgaben für Einkäufe:[/] {trader.Expenses.ToString("F2")}\n" +
+                    $"[bold]Einnahmen aus Verkäufen:[/] {trader.Revenue.ToString("F2")}" +
+                    $"[bold]Angefallene Lagerkosten:[/] {trader.StorageCosts.ToString("F2")}\n" +
+                    $"[bold]Aktueller Kontostand:[/] {trader.AccountBalance.ToString("F2")}\n"
+                ))
+                .Header($"Tagesbericht für {trader.Name} ")
+                .Border(BoxBorder.Rounded)
+                .BorderStyle(new Style(Color.LightGoldenrod1));
+        AnsiConsole.Write(panel);
         Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
         Console.ReadLine();
     }
