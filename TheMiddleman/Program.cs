@@ -5,7 +5,7 @@ class Application
     static void Main()
     {
         BusinessLogic businessLogic = new BusinessLogic();
-        businessLogic.Initialize();
+        businessLogic.InitializeParser();
         UserInterface ui = new UserInterface(businessLogic);
         ui.StartSimulation();
     }

@@ -5,18 +5,23 @@ class BusinessLogic
     private Random random = new Random();
     private List<Product>? products;
     private List<Trader>? traders;
+    private List<Trader> bankruptTraders;
     public Action<Trader, int> OnDayChange { get; set; } = delegate { };
     public Action<Trader> OnBankruptcy { get; set; } = delegate { };
-    public Action<List<Trader>> OnSimulationEnd { get; set; } = delegate { };
+    public Action<List<Trader>, List<Trader>> OnSimulationEnd { get; set; } = delegate { };
     private int simulationDuration;
+    private int _currentDay = 1;
 
-    public BusinessLogic() { }
-
-    public void Initialize()
+    public BusinessLogic()
     {
-        ProductsParser parser = new ProductsParser("produkte.yml");
         products = new List<Product>();
         traders = new List<Trader>();
+        bankruptTraders = new List<Trader>();
+    }
+
+    public void InitializeParser()
+    {
+        ProductsParser parser = new ProductsParser("produkte.yml");
         products = parser.ExtractProductsFromYAML();
     }
 
@@ -155,7 +160,7 @@ class BusinessLogic
     {
         List<Trader> tradersToRemove = IdentifyBankruptTraders(traders);
         RemoveBankruptTraders(traders, tradersToRemove);
-        TerminateSimulationIfAllBankrupt(traders);
+        TerminateSimulationIfAllBankrupt(traders, bankruptTraders);
     }
 
     private void UpdateProducts(int currentDay)
@@ -172,22 +177,36 @@ class BusinessLogic
         MoveFirstTraderToEnd(traders);
     }
 
-    public void RunDayCycle(ref int currentDay)
+    public void RunDayCycle()
     {
         if (traders == null) { throw new NullReferenceException("Zwischenhändlerliste ist null."); }
-        UpdateProducts(currentDay);
+        UpdateProducts(_currentDay);
         foreach (Trader trader in traders)
         {
             trader.CalculateDiscountsForAllProducts(GetProducts());
-            if (currentDay > 1)
+            if (_currentDay > 1)
             {
                 ApplyStorageCosts(trader);
+                if (trader.AccountBalance <= 0)
+                {
+                    OnBankruptcy.Invoke(trader);
+                    continue;
+                }
             }
-            OnDayChange.Invoke(trader, currentDay);
+            OnDayChange.Invoke(trader, _currentDay);
         }
         RotateTraders(traders);
         ProcessBankruptcies(traders);
-        currentDay++;
+        _currentDay++;
+        if (_currentDay > simulationDuration)
+        {
+            OnSimulationEnd.Invoke(traders, bankruptTraders);
+        }
+    }
+
+    public int GetCurrentDay()
+    {
+        return _currentDay;
     }
 
     public void UpdateProductAvailability()
@@ -295,7 +314,6 @@ class BusinessLogic
         {
             if (trader.AccountBalance < 0)
             {
-                OnBankruptcy.Invoke(trader);
                 tradersToRemove.Add(trader);
             }
         }
@@ -307,14 +325,15 @@ class BusinessLogic
         foreach (var trader in tradersToRemove)
         {
             traders.Remove(trader);
+            bankruptTraders.Add(trader);
         }
     }
 
-    private void TerminateSimulationIfAllBankrupt(List<Trader> traders)
+    private void TerminateSimulationIfAllBankrupt(List<Trader> traders, List<Trader> bankruptTraders)
     {
-        if (traders.Count == 0)
+        if (traders.Count == 0 || _currentDay > simulationDuration)
         {
-            OnSimulationEnd.Invoke(traders);
+            OnSimulationEnd.Invoke(traders, bankruptTraders);
         }
     }
 
