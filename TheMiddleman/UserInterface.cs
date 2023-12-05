@@ -322,36 +322,41 @@ class UserInterface
         ReadDurationInput();
     }
 
-    public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
-    {
-        var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
-        var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
-        int rank = 1;
-        Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
-        Console.ResetColor();
-        foreach (var trader in sortedTraders)
-        {
-            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
-            rank++;
-        }
-        if (bankruptTraders.Any())
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("\nBankrotte Zwischenhändler:\n");
-            Console.ResetColor();
-            foreach (var trader in bankruptTraders)
-            {
-                Console.WriteLine($"Zwischenhändler {trader.Name}");
-            }
-        }
-        else
-        {
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
-            Console.ResetColor();
-        }
+public void DisplayTraderRanking(List<Trader> traders) {
+    var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
+    var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
+    int rank = 1;
+    Console.ForegroundColor = ConsoleColor.Blue;
+    Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
+    Console.ResetColor();
+    foreach (var trader in sortedTraders) {
+        Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
+        rank++;
     }
+}
+public void DisplayBankruptTraders(List<Trader> bankruptTraders) {
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine("\nBankrotte Zwischenhändler:\n");
+    Console.ResetColor();
+    foreach (var trader in bankruptTraders) {
+        Console.WriteLine($"Zwischenhändler {trader.Name}");
+    }
+}
+
+public void DisplayNotBankruptTraders() {
+    Console.ForegroundColor = ConsoleColor.DarkYellow;
+    Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
+    Console.ResetColor();
+}
+
+public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders) {
+    DisplayTraderRanking(traders);
+    if (bankruptTraders.Any()) {
+        DisplayBankruptTraders(bankruptTraders);
+    } else {
+        DisplayNotBankruptTraders();
+    }
+}
 
     public void DisplayDailyReport(Trader trader)
     {
