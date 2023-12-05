@@ -400,7 +400,7 @@ class UserInterface
     {
         Console.WriteLine("\n");
         var rule = new Rule($"Tag {businessLogic.GetCurrentDay()}");
-        rule.RuleStyle("darkred_1");
+        rule.RuleStyle("blue");
         rule.Justification = Justify.Left;
         AnsiConsole.Write(rule);
     }
