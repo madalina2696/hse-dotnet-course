@@ -12,9 +12,10 @@ class UserInterface
 
     public void Initialize()
     {
-        businessLogic.OnDayChange += DisplayOptions;
+        businessLogic.OnTraderChange += DisplayOptions;
         businessLogic.OnBankruptcy += DisplayBankruptcy;
         businessLogic.OnSimulationEnd += DisplayRanking;
+        businessLogic.OnDayChange += ShowCurrentDay;
     }
 
     private void DisplayBankruptcy(Trader trader)
@@ -321,7 +322,7 @@ class UserInterface
         ReadDurationInput();
     }
 
-    public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
+    /* public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
     {
         var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
         var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
@@ -354,18 +355,50 @@ class UserInterface
                 rank++;
             }
         }
+    } */
+
+    public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
+    {
+        var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
+        var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
+        int rank = 1;
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
+        Console.ResetColor();
+        foreach (var trader in sortedTraders)
+        {
+            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
+            rank++;
+        }
+        if (bankruptTraders.Any())
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("\nBankrotte Zwischenhändler:\n");
+            Console.ResetColor();
+            foreach (var trader in bankruptTraders)
+            {
+                Console.WriteLine($"Zwischenhändler {trader.Name}");
+            }
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
+            Console.ResetColor();
+        }
     }
+
 
     public void DisplayDailyReport(Trader trader)
     {
         Console.WriteLine("\n");
         var panel = new Panel(
                 new Markup(
-                    $"[bold]\nKontostand zu Beginn des letzten Tages:[/] {trader.StartingBalance.ToString("F2")}\n" +
-                    $"[bold]Ausgaben für Einkäufe:[/] {trader.Expenses.ToString("F2")}\n" +
-                    $"[bold]Einnahmen aus Verkäufen:[/] {trader.Revenue.ToString("F2")}" +
-                    $"[bold]Angefallene Lagerkosten:[/] {trader.StorageCosts.ToString("F2")}\n" +
-                    $"[bold]Aktueller Kontostand:[/] {trader.AccountBalance.ToString("F2")}\n"
+                    $"\n[bold][darkturquoise]Kontostand zu Beginn des letzten Tages:[/][/] {trader.StartingBalance.ToString("F2")}\n" +
+                    $"[bold][darkturquoise]Ausgaben für Einkäufe:[/][/] {trader.Expenses.ToString("F2")}\n" +
+                    $"[bold][darkturquoise]Einnahmen aus Verkäufen:[/][/] {trader.Revenue.ToString("F2")}\n" +
+                    $"[bold][darkturquoise]Angefallene Lagerkosten:[/][/] {trader.StorageCosts.ToString("F2")}\n" +
+                    $"[bold][darkturquoise]Aktueller Kontostand:[/][/] {trader.AccountBalance.ToString("F2")}\n"
                 ))
                 .Header($"Tagesbericht für {trader.Name} ")
                 .Border(BoxBorder.Rounded)
@@ -394,15 +427,7 @@ class UserInterface
         ReadSimulationDuration();
         Initialize();
         ShowTradersCreation(ReadParticipantCount());
-        while (businessLogic.GetCurrentDay() <= businessLogic.GetSimulationDuration())
-        {
-            ShowCurrentDay();
-            businessLogic.RunDayCycle();
-            if (businessLogic.GetCurrentDay() > businessLogic.GetSimulationDuration())
-            {
-                break;
-            }
-        }
+        businessLogic.RunDayCycle();
     }
 
     private void ShowCurrentDay()
