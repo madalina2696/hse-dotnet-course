@@ -80,6 +80,10 @@ class BusinessLogic
 
     public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
+        if (trader.AccountBalance < selectedProduct.BuyingPrice * quantity)
+        {
+            throw new BalanceException("Nicht genügend Geld für den Einkauf.");
+        }
         double discount = trader.ProductDiscounts.ContainsKey(selectedProduct) ? trader.ProductDiscounts[selectedProduct] : 0;
         double discountedPrice = selectedProduct.BuyingPrice * (1 - discount);
         double totalCost = quantity * discountedPrice;

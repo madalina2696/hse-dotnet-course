@@ -1,8 +1,18 @@
 {
   "version": 2,
-  "dgSpecHash": "AsQnmgw9BonTDJ82zrWmiV5k8yQu1KCAuDMcHOZVUa5kUQ09mDcN60QLF2/C68+ad4mt4KxkrA7g5mdLM7QSpw==",
+  "dgSpecHash": "ZfEHZ28W8qc+OF4EXB8DIA8T9612Owtwlmg2NdID6Oj6Zh6QWC+F/VRrD3kKFSwXeAs5RfgfJy1dh4g5VXSW7Q==",
   "success": true,
   "projectFilePath": "/workspaces/hse-dotnet-course/TheMiddleman/TheMiddleman.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/home/codespace/.nuget/packages/microsoft.codecoverage/17.8.0/microsoft.codecoverage.17.8.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/microsoft.net.test.sdk/17.8.0/microsoft.net.test.sdk.17.8.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/microsoft.testplatform.objectmodel/17.8.0/microsoft.testplatform.objectmodel.17.8.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/microsoft.testplatform.testhost/17.8.0/microsoft.testplatform.testhost.17.8.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg.sha512",
+    "/home/codespace/.nuget/packages/nuget.frameworks/6.5.0/nuget.frameworks.6.5.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/nunit/4.0.1/nunit.4.0.1.nupkg.sha512",
+    "/home/codespace/.nuget/packages/nunit3testadapter/4.5.0/nunit3testadapter.4.5.0.nupkg.sha512",
+    "/home/codespace/.nuget/packages/system.reflection.metadata/1.6.0/system.reflection.metadata.1.6.0.nupkg.sha512"
+  ],
   "logs": []
 }
