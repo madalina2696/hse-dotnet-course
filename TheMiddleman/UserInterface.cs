@@ -171,7 +171,7 @@ class UserInterface
             ShowShoppingMenu(trader);
             return null;
         }
-        return businessLogic.GetProducts().Find(p => p.Id == selectedProductId);
+        return businessLogic.GetProductByID(selectedProductId);
     }
 
     private void ConductProductPurchase(Trader trader, Product? selectedProduct)
@@ -180,7 +180,7 @@ class UserInterface
         {
             return;
         }
-        Console.WriteLine($"Wieviel von {selectedProduct.Name} kaufen?");
+        Console.WriteLine($"\nWieviel von {selectedProduct.Name} kaufen?");
         int quantity;
         if (!int.TryParse(Console.ReadLine(), out quantity) || quantity <= 0)
         {
@@ -189,7 +189,7 @@ class UserInterface
         try
         {
             businessLogic.Purchase(trader, selectedProduct, quantity);
-            ShowMessage($"Kauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
+            ShowMessage($"\nKauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
         }
         catch (Exception e)
         {
@@ -200,8 +200,15 @@ class UserInterface
     public void ShowShoppingMenu(Trader trader)
     {
         ShowShoppingMenuOptions(trader);
-        Product? selectedProduct = GetUserSelectedProduct(trader);
-        ConductProductPurchase(trader, selectedProduct);
+        try
+        {
+            Product? selectedProduct = GetUserSelectedProduct(trader);
+            ConductProductPurchase(trader, selectedProduct);
+        }
+        catch (Exception e)
+        {
+            ShowError(e.Message);
+        }
     }
 
     private void ShowSellingMenuOptions(Trader trader)
@@ -245,10 +252,18 @@ class UserInterface
         var selectedEntry = trader.OwnedProducts.ElementAt(selectedProductIndex - 1);
         var selectedProduct = selectedEntry.Key;
         var availableQuantity = selectedEntry.Value;
-        Console.WriteLine($"Wieviel von {selectedProduct.Name} verkaufen (max. {availableQuantity})?");
-        int quantityToSell = int.Parse(Console.ReadLine() ?? "0");
-        businessLogic.Sell(trader, selectedProduct, quantityToSell);
-        ShowMessage($"Verkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
+        Console.WriteLine($"\nWieviel von {selectedProduct.Name} verkaufen (max. {availableQuantity})?");
+        try
+        {
+            int quantityToSell = int.Parse(Console.ReadLine() ?? "0");
+            businessLogic.Sell(trader, selectedProduct, quantityToSell);
+        }
+        catch (Exception e)
+        {
+            ShowError(e.Message);
+            return;
+        }
+        ShowMessage($"\nVerkauf erfolgreich. Neuer Kontostand: ${trader.AccountBalance.ToString("F2")}");
     }
 
     public void ShowSellingMenu(Trader trader)
@@ -297,7 +312,7 @@ class UserInterface
 
     private void AskSimulationDuration()
     {
-        Console.WriteLine("Wie viele Tage soll die Simulation laufen?");
+        Console.WriteLine("\nWie viele Tage soll die Simulation laufen?");
     }
 
     private void ReadDurationInput()
@@ -322,41 +337,54 @@ class UserInterface
         ReadDurationInput();
     }
 
-public void DisplayTraderRanking(List<Trader> traders) {
-    var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
-    var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
-    int rank = 1;
-    Console.ForegroundColor = ConsoleColor.Blue;
-    Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
-    Console.ResetColor();
-    foreach (var trader in sortedTraders) {
-        Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
-        rank++;
+    public void DisplayTraderRanking(List<Trader> traders)
+    {
+        var solventTraders = traders.Where(trader => trader.AccountBalance >= 0).ToList();
+        var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
+        int rank = 1;
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
+        Console.ResetColor();
+        foreach (var trader in sortedTraders)
+        {
+            Console.WriteLine($"Platz {rank} - {trader.Name} - Kontostand: ${trader.AccountBalance.ToString("F2")}");
+            rank++;
+        }
     }
-}
-public void DisplayBankruptTraders(List<Trader> bankruptTraders) {
-    Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine("\nBankrotte Zwischenhändler:\n");
-    Console.ResetColor();
-    foreach (var trader in bankruptTraders) {
-        Console.WriteLine($"Zwischenhändler {trader.Name}");
+    public void DisplayBankruptTraders(List<Trader> bankruptTraders)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("\nBankrotte Zwischenhändler:");
+        Console.ResetColor();
+        foreach (var trader in bankruptTraders)
+        {
+            Console.WriteLine($"Zwischenhändler {trader.Name}");
+        }
+        Console.WriteLine("\n");
     }
-}
 
-public void DisplayNotBankruptTraders() {
-    Console.ForegroundColor = ConsoleColor.DarkYellow;
-    Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
-    Console.ResetColor();
-}
-
-public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders) {
-    DisplayTraderRanking(traders);
-    if (bankruptTraders.Any()) {
-        DisplayBankruptTraders(bankruptTraders);
-    } else {
-        DisplayNotBankruptTraders();
+    public void DisplayNotBankruptTraders()
+    {
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.WriteLine("\nKeine bankrotten Zwischenhändler.\n");
+        Console.ResetColor();
     }
-}
+
+    public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders)
+    {
+        if (traders.Any())
+        {
+            DisplayTraderRanking(traders);
+        }
+        if (bankruptTraders.Any())
+        {
+            DisplayBankruptTraders(bankruptTraders);
+        }
+        else
+        {
+            DisplayNotBankruptTraders();
+        }
+    }
 
     public void DisplayDailyReport(Trader trader)
     {
@@ -387,7 +415,7 @@ public void DisplayRanking(List<Trader> traders, List<Trader> bankruptTraders) {
     public static void ShowMessage(string message)
     {
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("\n" + message + "\n");
+        Console.WriteLine(message + "\n");
         Console.ResetColor();
     }
 

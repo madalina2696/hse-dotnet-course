@@ -79,6 +79,19 @@ class BusinessLogic
         selectedProduct.Availability -= quantity;
     }
 
+    public Product GetProductByID(int productID)
+    {
+        if (products == null) { throw new NullReferenceException("Produktliste ist null."); }
+        foreach (Product product in products)
+        {
+            if (product.Id == productID)
+            {
+                return product;
+            }
+        }
+        throw new ProductException("Produkt nicht gefunden.");
+    }
+
     public void Purchase(Trader trader, Product selectedProduct, int quantity)
     {
         if (trader.AccountBalance < selectedProduct.BuyingPrice * quantity)
