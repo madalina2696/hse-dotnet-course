@@ -205,6 +205,18 @@ class BusinessLogic
                 trader.CalculateDiscountsForAllProducts(GetProducts());
                 if (_currentDay > 1)
                 {
+                    if (trader.CurrentLoan != null && trader.CurrentLoan.DueDay == _currentDay)
+                    {
+                        try
+                        {
+                            RepayLoan(trader);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            OnBankruptcy.Invoke(trader);
+                            continue;
+                        }
+                    }
                     ApplyStorageCosts(trader);
                     if (trader.AccountBalance <= 0)
                     {
@@ -369,5 +381,29 @@ class BusinessLogic
     internal int GetSimulationDuration()
     {
         return simulationDuration;
+    }
+
+    public void TakeLoan(Trader trader, Trader.Loan loan)
+    {
+        if (trader.CurrentLoan != null)
+        {
+            throw new InvalidOperationException("Bereits aktiver Kredit vorhanden.");
+        }
+        trader.CurrentLoan = loan;
+        trader.AccountBalance += loan.Amount;
+    }
+
+    public void RepayLoan(Trader trader)
+    {
+        if (trader.CurrentLoan == null)
+        {
+            throw new InvalidOperationException("Kein aktiver Kredit vorhanden.");
+        }
+        trader.AccountBalance -= trader.CurrentLoan.RepaymentAmount;
+        if (trader.AccountBalance < trader.CurrentLoan.RepaymentAmount)
+        {
+            throw new InvalidOperationException("Nicht genügend Guthaben für Kreditrückzahlung.");
+        }
+        trader.CurrentLoan = null;
     }
 }

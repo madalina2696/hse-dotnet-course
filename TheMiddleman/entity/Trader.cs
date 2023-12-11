@@ -12,6 +12,7 @@ namespace TheMiddleman.Entity
         public double Expenses { get; set; }
         public double Revenue { get; set; }
         public double StorageCosts { get; set; }
+        public Loan? CurrentLoan { get; set; }
         public Dictionary<Product, int> OwnedProducts { get; set; } = new Dictionary<Product, int>();
         public Dictionary<Product, double> ProductDiscounts { get; private set; } = new Dictionary<Product, double>();
 
@@ -21,6 +22,12 @@ namespace TheMiddleman.Entity
             Company = company;
             AccountBalance = accountBalance;
             StartingBalance = accountBalance;
+        }
+        public class Loan
+        {
+            public double Amount { get; set; }
+            public double RepaymentAmount { get; set; }
+            public int DueDay { get; set; }
         }
 
         public void UpdateExpenses(double amount)

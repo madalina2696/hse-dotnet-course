@@ -64,4 +64,19 @@ public class BusinessLogicTests
         businessLogic?.Purchase(trader!, product, 10);
         ClassicAssert.AreEqual(9000, trader!.AccountBalance);
     }
+
+    [Test]
+    public void TakeLoan_Successful_UpdateBalance()
+    {
+        businessLogic?.TakeLoan(trader!, new Trader.Loan { Amount = 5000, RepaymentAmount = 5150, DueDay = 8 });
+        ClassicAssert.AreEqual(15000, trader!.AccountBalance);
+    }
+
+    [Test]
+    public void RepayLoan_Successful_UpdateBalance()
+    {
+        businessLogic!.TakeLoan(trader!, new Trader.Loan { Amount = 5000, RepaymentAmount = 5150, DueDay = 6 });
+        businessLogic.RepayLoan(trader!);
+        ClassicAssert.AreEqual(9850, trader!.AccountBalance);
+    }
 }

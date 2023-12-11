@@ -1,5 +1,6 @@
 using Spectre.Console;
 using TheMiddleman.Entity;
+using static TheMiddleman.Entity.Trader;
 
 class UserInterface
 {
@@ -26,7 +27,16 @@ class UserInterface
     public int ReadParticipantCount()
     {
         Console.WriteLine("\nWieviel Zwischenhändler nehmen teil?");
-        return int.Parse(Console.ReadLine() ?? "0");
+        string? input = Console.ReadLine();
+        if (int.TryParse(input, out int count))
+        {
+            return count;
+        }
+        else
+        {
+            ShowError("Ungültige Eingabe. Bitte erneut versuchen.");
+            return ReadParticipantCount();
+        }
     }
 
     public string ReadTraderNameAtPosition(int position)
@@ -71,14 +81,14 @@ class UserInterface
     public void DisplayTraderStatus(Trader trader, int currentDay, int usedStorage)
     {
         var panel = new Panel(
-                   new Markup(
+                new Markup(
                     $"[bold]Kontostand:[/] ${trader.AccountBalance.ToString("F2")}" + "  |  " +
-                       $"[bold]Lagerkapazität:[/] {usedStorage}/{trader.StorageCapacity}" + "  |  " +
-                       $"[bold]Tag:[/] {currentDay}"
-                   ))
-                   .Header($" {trader.Name} von {trader.Company} ")
-                   .Border(BoxBorder.Rounded)
-                   .BorderStyle(new Style(Color.Cyan1));
+                    $"[bold]Lagerkapazität:[/] {usedStorage}/{trader.StorageCapacity}" + "  |  " +
+                    $"[bold]Tag:[/] {currentDay}"
+                ))
+                .Header($" {trader.Name} von {trader.Company} ")
+                .Border(BoxBorder.Rounded)
+                .BorderStyle(new Style(Color.Cyan1));
         AnsiConsole.Write(panel);
     }
 
@@ -96,6 +106,7 @@ class UserInterface
         Console.WriteLine("e) Einkaufen");
         Console.WriteLine("v) Verkaufen");
         Console.WriteLine("l) Lager vergrößern");
+        Console.WriteLine("k) Kredit aufnehmen");
         Console.WriteLine("b) Runde beenden");
     }
 
@@ -133,6 +144,9 @@ class UserInterface
                 break;
             case "l":
                 ShowStorageUpgradeMenu(trader);
+                break;
+            case "k":
+                ShowLoanMenu(trader);
                 break;
             default:
                 ShowError("Ungültige Auswahl. Bitte erneut versuchen.");
@@ -388,18 +402,32 @@ class UserInterface
 
     public void DisplayDailyReport(Trader trader)
     {
+        string creditAmountMessage = trader.CurrentLoan != null
+            ? $"${trader.CurrentLoan.Amount.ToString("F2")}"
+            : "Kein Kredit";
+
+        int remainingDays = trader.CurrentLoan != null
+            ? trader.CurrentLoan.DueDay - businessLogic.GetCurrentDay()
+            : 0;
+
+        string remainingDaysMessage = trader.CurrentLoan != null && remainingDays >= 0
+            ? $"{remainingDays} Tage verbleiben"
+            : "Kein Kredit";
+
         Console.WriteLine("\n");
         var panel = new Panel(
-                new Markup(
-                    $"\n[bold][darkturquoise]Kontostand zu Beginn des letzten Tages:[/][/] {trader.StartingBalance.ToString("F2")}\n" +
-                    $"[bold][darkturquoise]Ausgaben für Einkäufe:[/][/] {trader.Expenses.ToString("F2")}\n" +
-                    $"[bold][darkturquoise]Einnahmen aus Verkäufen:[/][/] {trader.Revenue.ToString("F2")}\n" +
-                    $"[bold][darkturquoise]Angefallene Lagerkosten:[/][/] {trader.StorageCosts.ToString("F2")}\n" +
-                    $"[bold][darkturquoise]Aktueller Kontostand:[/][/] {trader.AccountBalance.ToString("F2")}\n"
-                ))
-                .Header($"Tagesbericht für {trader.Name} ")
-                .Border(BoxBorder.Rounded)
-                .BorderStyle(new Style(Color.LightGoldenrod1));
+            new Markup(
+                $"\n[bold][darkturquoise]Kontostand zu Beginn des letzten Tages:[/][/] ${trader.StartingBalance.ToString("F2")}\n" +
+                $"[bold][darkturquoise]Ausgaben für Einkäufe:[/][/] ${trader.Expenses.ToString("F2")}\n" +
+                $"[bold][darkturquoise]Einnahmen aus Verkäufen:[/][/] ${trader.Revenue.ToString("F2")}\n" +
+                $"[bold][darkturquoise]Angefallene Lagerkosten:[/][/] ${trader.StorageCosts.ToString("F2")}\n" +
+                $"[bold][darkturquoise]Aktueller Kontostand:[/][/] ${trader.AccountBalance.ToString("F2")}\n" +
+                $"[bold][darkturquoise]Kredit:[/][/] {creditAmountMessage}\n" +
+                $"[bold][darkturquoise]Verbleibende Tage bis zur Rückzahlung:[/][/] {remainingDaysMessage}\n"
+            ))
+            .Header($"Tagesbericht für {trader.Name} ")
+            .Border(BoxBorder.Rounded)
+            .BorderStyle(new Style(Color.LightGoldenrod1));
         AnsiConsole.Write(panel);
         Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
         Console.ReadLine();
@@ -444,6 +472,63 @@ class UserInterface
             string firmName = FetchFirmName(traderName);
             double startingBalance = AssignStartingBalance(AskForDifficultyLevel());
             businessLogic.CreateTrader(traderName, firmName, startingBalance);
+        }
+    }
+
+    public void ShowLoanMenu(Trader trader)
+    {
+        Console.WriteLine("\nWählen Sie einen Kredit aus:");
+        Console.WriteLine("1) $5000 mit 3% Zinsen ($5150 Rückzahlung)");
+        Console.WriteLine("2) $10000 mit 5% Zinsen ($10500 Rückzahlung)");
+        Console.WriteLine("3) $25000 mit 8% Zinsen ($27000 Rückzahlung)");
+        Console.WriteLine("4) Keinen Kredit aufnehmen.\n");
+        string? choice = Console.ReadLine();
+        Loan loan = null!;
+        switch (choice)
+        {
+            case "1":
+                loan = new Loan { Amount = 5000, RepaymentAmount = 5150, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                break;
+            case "2":
+                loan = new Loan { Amount = 10000, RepaymentAmount = 10500, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                break;
+            case "3":
+                loan = new Loan { Amount = 25000, RepaymentAmount = 27000, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                break;
+            case "4":
+                break;
+            default:
+                ShowError("Ungültige Auswahl. Bitte erneut versuchen.");
+                break;
+        }
+        if (loan != null)
+        {
+            try
+            {
+                businessLogic.TakeLoan(trader, loan);
+                ShowMessage("Kredit erfolgreich aufgenommen.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowError(ex.Message);
+            }
+        }
+    }
+
+    public void DisplayLoanRepaymentStatus(Trader trader)
+    {
+        int currentDay = businessLogic.GetCurrentDay();
+        if (currentDay > 7)
+        {
+            try
+            {
+                businessLogic.RepayLoan(trader);
+                Console.WriteLine("Kredit erfolgreich zurückgezahlt.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
