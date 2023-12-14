@@ -378,11 +378,6 @@ class BusinessLogic
         simulationDuration = duration;
     }
 
-    internal int GetSimulationDuration()
-    {
-        return simulationDuration;
-    }
-
     public void TakeLoan(Trader trader, Trader.Loan loan)
     {
         if (trader.CurrentLoan != null)
