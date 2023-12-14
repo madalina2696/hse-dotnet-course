@@ -402,6 +402,7 @@ class UserInterface
 
     public void DisplayDailyReport(Trader trader)
     {
+
         string creditAmountMessage = trader.CurrentLoan != null
             ? $"${trader.CurrentLoan.Amount.ToString("F2")}"
             : "Kein Kredit";
@@ -412,7 +413,9 @@ class UserInterface
 
         string remainingDaysMessage = trader.CurrentLoan != null && remainingDays >= 0
             ? $"{remainingDays} Tage verbleiben"
-            : "Kein Kredit";
+            : "0";
+
+        string loanRepaymentMessage = trader.LoanRepaymentToday ? "\n[bold][green]Kredit zurückgezahlt![/][/]" : "";
 
         Console.WriteLine("\n");
         var panel = new Panel(
@@ -423,7 +426,8 @@ class UserInterface
                 $"[bold][darkturquoise]Angefallene Lagerkosten:[/][/] ${trader.StorageCosts.ToString("F2")}\n" +
                 $"[bold][darkturquoise]Aktueller Kontostand:[/][/] ${trader.AccountBalance.ToString("F2")}\n" +
                 $"[bold][darkturquoise]Kredit:[/][/] {creditAmountMessage}\n" +
-                $"[bold][darkturquoise]Verbleibende Tage bis zur Rückzahlung:[/][/] {remainingDaysMessage}\n"
+                $"[bold][darkturquoise]Verbleibende Tage bis zur Rückzahlung:[/][/] {remainingDaysMessage}\n" +
+                loanRepaymentMessage
             ))
             .Header($"Tagesbericht für {trader.Name} ")
             .Border(BoxBorder.Rounded)
@@ -487,13 +491,13 @@ class UserInterface
         switch (choice)
         {
             case "1":
-                loan = new Loan { Amount = 5000, RepaymentAmount = 5150, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                loan = new Loan { Amount = 5000, RepaymentAmount = 5150, DueDay = businessLogic.GetCurrentDay() + 7 };
                 break;
             case "2":
-                loan = new Loan { Amount = 10000, RepaymentAmount = 10500, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                loan = new Loan { Amount = 10000, RepaymentAmount = 10500, DueDay = businessLogic.GetCurrentDay() + 7 };
                 break;
             case "3":
-                loan = new Loan { Amount = 25000, RepaymentAmount = 27000, DueDay = businessLogic.GetCurrentDay() - 1 + 7 };
+                loan = new Loan { Amount = 25000, RepaymentAmount = 27000, DueDay = businessLogic.GetCurrentDay() + 7 };
                 break;
             case "4":
                 break;

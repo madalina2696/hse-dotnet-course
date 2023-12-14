@@ -207,15 +207,7 @@ class BusinessLogic
                 {
                     if (trader.CurrentLoan != null && trader.CurrentLoan.DueDay == _currentDay)
                     {
-                        try
-                        {
-                            RepayLoan(trader);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            OnBankruptcy.Invoke(trader);
-                            continue;
-                        }
+                        RepayLoan(trader);
                     }
                     ApplyStorageCosts(trader);
                     if (trader.AccountBalance <= 0)
@@ -225,6 +217,10 @@ class BusinessLogic
                     }
                 }
                 OnTraderChange.Invoke(trader, _currentDay);
+            }
+            foreach (Trader trader in traders)
+            {
+                trader.LoanRepaymentToday = false;
             }
             RotateTraders(traders);
             ProcessBankruptcies(traders);
@@ -382,7 +378,7 @@ class BusinessLogic
     {
         if (trader.CurrentLoan != null)
         {
-            throw new InvalidOperationException("Bereits aktiver Kredit vorhanden.");
+            throw new LoanException("Bereits aktiver Kredit vorhanden.");
         }
         trader.CurrentLoan = loan;
         trader.AccountBalance += loan.Amount;
@@ -392,13 +388,20 @@ class BusinessLogic
     {
         if (trader.CurrentLoan == null)
         {
-            throw new InvalidOperationException("Kein aktiver Kredit vorhanden.");
+            throw new LoanException("Kein aktiver Kredit vorhanden.");
         }
-        trader.AccountBalance -= trader.CurrentLoan.RepaymentAmount;
-        if (trader.AccountBalance < trader.CurrentLoan.RepaymentAmount)
+        else
         {
-            throw new InvalidOperationException("Nicht genügend Guthaben für Kreditrückzahlung.");
+            if (trader.AccountBalance < trader.CurrentLoan.RepaymentAmount)
+            {
+                throw new BalanceException("Nicht genügend Guthaben für Kreditrückzahlung.");
+            }
+            else
+            {
+                trader.AccountBalance -= trader.CurrentLoan.RepaymentAmount;
+                trader.CurrentLoan = null;
+                trader.LoanRepaymentToday = true;
+            }
         }
-        trader.CurrentLoan = null;
     }
 }

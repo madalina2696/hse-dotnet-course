@@ -13,6 +13,7 @@ namespace TheMiddleman.Entity
         public double Revenue { get; set; }
         public double StorageCosts { get; set; }
         public Loan? CurrentLoan { get; set; }
+        public bool LoanRepaymentToday { get; set; } = false;
         public Dictionary<Product, int> OwnedProducts { get; set; } = new Dictionary<Product, int>();
         public Dictionary<Product, double> ProductDiscounts { get; private set; } = new Dictionary<Product, double>();
 
