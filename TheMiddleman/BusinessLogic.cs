@@ -194,7 +194,7 @@ class BusinessLogic
         MoveFirstTraderToEnd(traders);
     }
 
-    public void RunDayCycle()
+    /* public void RunDayCycle()
     {
         while (_currentDay <= simulationDuration && !TerminateSimulation(traders!, bankruptTraders))
         {
@@ -207,7 +207,15 @@ class BusinessLogic
                 {
                     if (trader.CurrentLoan != null && trader.CurrentLoan.DueDay == _currentDay)
                     {
-                        RepayLoan(trader);
+                        try
+                        {
+                            RepayLoan(trader);
+                        }
+                        catch (BalanceException)
+                        {
+                            OnBankruptcy.Invoke(trader);
+                            continue;
+                        }
                     }
                     ApplyStorageCosts(trader);
                     if (trader.AccountBalance <= 0)
@@ -226,6 +234,61 @@ class BusinessLogic
             ProcessBankruptcies(traders);
             _currentDay++;
         }
+    } */
+
+    public void RunDayCycle()
+    {
+        while (_currentDay <= simulationDuration && !TerminateSimulation(traders!, bankruptTraders))
+        {
+            OnDayChange.Invoke();
+            UpdateProducts(_currentDay);
+            HandleDailyTraderActivities();
+            RotateTraders(traders!);
+            ProcessBankruptcies(traders!);
+            _currentDay++;
+        }
+    }
+
+    private void HandleDailyTraderActivities()
+    {
+        List<Trader> tradersToProcess = new List<Trader>(traders!);
+        foreach (Trader trader in tradersToProcess)
+        {
+            trader.CalculateDiscountsForAllProducts(GetProducts());
+            if (ProcessTraderLoans(trader)) { continue; }
+            ApplyStorageCosts(trader);
+            if (trader.AccountBalance <= 0)
+            {
+                MarkTraderAsBankrupt(trader);
+                continue;
+            }
+            OnTraderChange.Invoke(trader, _currentDay);
+        }
+    }
+
+    private bool ProcessTraderLoans(Trader trader)
+    {
+        if (_currentDay > 1 && trader.CurrentLoan != null && trader.CurrentLoan.DueDay == _currentDay)
+        {
+            try
+            {
+                RepayLoan(trader);
+            }
+            catch (BalanceException)
+            {
+                MarkTraderAsBankrupt(trader);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void MarkTraderAsBankrupt(Trader trader)
+    {
+        if (traders == null) { throw new NullReferenceException("Traderliste ist null."); }
+        traders!.Remove(trader);
+        bankruptTraders.Add(trader);
+        OnBankruptcy.Invoke(trader);
     }
 
     public int GetCurrentDay()

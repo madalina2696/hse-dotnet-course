@@ -92,14 +92,14 @@ class UserInterface
         AnsiConsole.Write(panel);
     }
 
-    public string ReadProductName(string line)
+    /* public string ReadProductName(string line)
     {
         return line.Substring(8);
     }
     public int ReadProductDurability(string line)
     {
         return int.Parse(line.Substring(14));
-    }
+    } */
 
     private void ShowUserOptions()
     {
@@ -198,6 +198,11 @@ class UserInterface
         int quantity;
         if (!int.TryParse(Console.ReadLine(), out quantity) || quantity <= 0)
         {
+            return;
+        }
+        else if (quantity > selectedProduct.Availability)
+        {
+            ShowError("Nicht genügend Produkte verfügbar.");
             return;
         }
         try
@@ -357,7 +362,7 @@ class UserInterface
         var sortedTraders = solventTraders.OrderByDescending(trader => trader.AccountBalance).ToList();
         int rank = 1;
         Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:\n");
+        Console.WriteLine("\nRangliste der Zwischenhändler am Ende der Simulation:");
         Console.ResetColor();
         foreach (var trader in sortedTraders)
         {
@@ -402,22 +407,24 @@ class UserInterface
 
     public void DisplayDailyReport(Trader trader)
     {
-
         string creditAmountMessage = trader.CurrentLoan != null
             ? $"${trader.CurrentLoan.Amount.ToString("F2")}"
             : "Kein Kredit";
-
         int remainingDays = trader.CurrentLoan != null
             ? trader.CurrentLoan.DueDay - businessLogic.GetCurrentDay()
             : 0;
-
         string remainingDaysMessage = trader.CurrentLoan != null && remainingDays >= 0
             ? $"{remainingDays} Tage verbleiben"
             : "0";
-
         string loanRepaymentMessage = trader.LoanRepaymentToday ? "\n[bold][green]Kredit zurückgezahlt![/][/]" : "";
-
         Console.WriteLine("\n");
+        AnsiConsole.Write(CreateDailyReportPanel(trader, creditAmountMessage, remainingDaysMessage, loanRepaymentMessage));
+        Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
+        Console.ReadLine();
+    }
+
+    private Panel CreateDailyReportPanel(Trader trader, string creditAmountMessage, string remainingDaysMessage, string loanRepaymentMessage)
+    {
         var panel = new Panel(
             new Markup(
                 $"\n[bold][darkturquoise]Kontostand zu Beginn des letzten Tages:[/][/] ${trader.StartingBalance.ToString("F2")}\n" +
@@ -432,9 +439,7 @@ class UserInterface
             .Header($"Tagesbericht für {trader.Name} ")
             .Border(BoxBorder.Rounded)
             .BorderStyle(new Style(Color.LightGoldenrod1));
-        AnsiConsole.Write(panel);
-        Console.WriteLine("\nDrücken Sie Enter, um fortzufahren...");
-        Console.ReadLine();
+        return panel;
     }
 
     public static void ShowError(string message)
@@ -479,13 +484,8 @@ class UserInterface
         }
     }
 
-    public void ShowLoanMenu(Trader trader)
+    private Trader.Loan AskTraderForLoanOption()
     {
-        Console.WriteLine("\nWählen Sie einen Kredit aus:");
-        Console.WriteLine("1) $5000 mit 3% Zinsen ($5150 Rückzahlung)");
-        Console.WriteLine("2) $10000 mit 5% Zinsen ($10500 Rückzahlung)");
-        Console.WriteLine("3) $25000 mit 8% Zinsen ($27000 Rückzahlung)");
-        Console.WriteLine("4) Keinen Kredit aufnehmen.\n");
         string? choice = Console.ReadLine();
         Loan loan = null!;
         switch (choice)
@@ -505,6 +505,13 @@ class UserInterface
                 ShowError("Ungültige Auswahl. Bitte erneut versuchen.");
                 break;
         }
+        return loan;
+    }
+
+    public void ShowLoanMenu(Trader trader)
+    {
+        ShowLoanOptions();
+        Trader.Loan loan = AskTraderForLoanOption();
         if (loan != null)
         {
             try
@@ -512,27 +519,19 @@ class UserInterface
                 businessLogic.TakeLoan(trader, loan);
                 ShowMessage("Kredit erfolgreich aufgenommen.");
             }
-            catch (InvalidOperationException ex)
+            catch (LoanException ex)
             {
                 ShowError(ex.Message);
             }
         }
     }
 
-    public void DisplayLoanRepaymentStatus(Trader trader)
+    private void ShowLoanOptions()
     {
-        int currentDay = businessLogic.GetCurrentDay();
-        if (currentDay > 7)
-        {
-            try
-            {
-                businessLogic.RepayLoan(trader);
-                Console.WriteLine("Kredit erfolgreich zurückgezahlt.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+        Console.WriteLine("\nWählen Sie einen Kredit aus:");
+        Console.WriteLine("1) $5000 mit 3% Zinsen ($5150 Rückzahlung)");
+        Console.WriteLine("2) $10000 mit 5% Zinsen ($10500 Rückzahlung)");
+        Console.WriteLine("3) $25000 mit 8% Zinsen ($27000 Rückzahlung)");
+        Console.WriteLine("4) Keinen Kredit aufnehmen.\n");
     }
 }

@@ -86,9 +86,7 @@ public class BusinessLogicTests
         var trader = new Trader("Madalina", "Madalina AG.", 10000);
         int initialCapacity = trader.StorageCapacity;
         double initialBalance = trader.AccountBalance;
-
         businessLogic!.UpgradeStorageCapacity(trader, 10);
-
         ClassicAssert.AreEqual(initialCapacity + 10, trader.StorageCapacity, "Lagerkapazität sollte erhöht werden.");
         ClassicAssert.AreEqual(initialBalance - (10 * 50), trader.AccountBalance, "Kontostand sollte um Kosten des Upgrades verringert werden.");
     }
@@ -99,9 +97,7 @@ public class BusinessLogicTests
         var trader = new Trader("Madalina", "Madalina AG.", 200);
         int initialCapacity = trader.StorageCapacity;
         double initialBalance = trader.AccountBalance;
-
         Assert.Throws<BalanceException>(() => businessLogic!.UpgradeStorageCapacity(trader, 10), "Sollte eine BalanceException werfen, wenn nicht genügend Geld vorhanden ist.");
-
         ClassicAssert.AreEqual(initialCapacity, trader.StorageCapacity, "Lagerkapazität sollte nicht erhöht werden.");
         ClassicAssert.AreEqual(initialBalance, trader.AccountBalance, "Kontostand sollte unverändert bleiben.");
     }
@@ -112,9 +108,7 @@ public class BusinessLogicTests
         var trader = new Trader("Max", "Max Co.", 10000);
         var product = new Product { Name = "Produkt", BasePrice = 125 };
         trader.OwnedProducts.Add(product, 20);
-
         businessLogic!.Sell(trader, product, 10);
-
         ClassicAssert.AreEqual(11000, trader.AccountBalance, "Kontostand sollte um den Verkaufserlös erhöht werden.");
         ClassicAssert.AreEqual(10, trader.OwnedProducts[product], "Bestand des verkauften Produkts sollte reduziert werden.");
     }
@@ -125,12 +119,9 @@ public class BusinessLogicTests
         var trader = new Trader("Madalina", "Madalina AG.", 10000);
         var product = new Product { Name = "Produkt", BasePrice = 100, Availability = 50 };
         trader.OwnedProducts.Add(product, 30);
-
         double initialRevenue = trader.Revenue;
         int quantityToSell = 10;
-
         businessLogic!.Sell(trader, product, quantityToSell);
-
         ClassicAssert.AreEqual(initialRevenue + (quantityToSell * product.SellingPrice), trader.Revenue, "Tagesumsatz sollte aktualisiert werden.");
     }
 
@@ -139,7 +130,6 @@ public class BusinessLogicTests
     {
         var trader = new Trader("Max", "Max Co.", 10000);
         var product = new Product { Name = "Produkt", BasePrice = 100, Availability = 50 };
-
         Assert.Throws<ProductException>(() => businessLogic!.Sell(trader, product, 10), "Sollte eine ProductException werfen, wenn das Produkt nicht im Bestand ist.");
     }
 }
